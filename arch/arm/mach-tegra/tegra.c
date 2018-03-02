@@ -102,7 +102,9 @@ static void __init tegra_dt_init_late(void)
 static const char * const tegra_dt_board_compat[] = {
 	"nvidia,tegra124",
 	"nvidia,tegra114",
-	"nvidia,cardhu-ouya"
+	"nvidia,cardhu-ouya",
+	"nvidia,cardhu-a04",
+	"nvidia,cardhu-a02",
 	"nvidia,tegra30",
 	"nvidia,tegra20",
 	NULL
@@ -111,6 +113,12 @@ static const char * const tegra_dt_board_compat[] = {
 DT_MACHINE_START(TEGRA_DT, "NVIDIA Tegra SoC (Flattened Device Tree)")
 	.l2c_aux_val	= 0x3c400001,
 	.l2c_aux_mask	= 0xc20fc3fe,
+	/*
+	.l2c_aux_val = 0x7e080000,
+	.l2c_aux_mask = 0x81F7FFFF, 
+	.l2c_aux_val = 0x2c080000,
+	.l2c_aux_mask = 0xD3F7FFFF,
+	*/
 	.smp		= smp_ops(tegra_smp_ops),
 	.map_io		= tegra_map_common_io,
 	.init_early	= tegra_init_early,
