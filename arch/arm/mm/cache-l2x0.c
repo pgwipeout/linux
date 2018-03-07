@@ -30,6 +30,7 @@
 #include <asm/cp15.h>
 #include <asm/cputype.h>
 #include <asm/hardware/cache-l2x0.h>
+#include <asm/firmware.h>
 #include "cache-tauros3.h"
 #include "cache-aurora-l2.h"
 
@@ -37,6 +38,7 @@ struct l2c_init_data {
 	const char *type;
 	unsigned way_size_0;
 	unsigned num_lock;
+	void (*init)(void __iomem *, u32 *, u32 *);
 	void (*of_parse)(const struct device_node *, u32 *, u32 *);
 	void (*enable)(void __iomem *, unsigned);
 	void (*fixup)(void __iomem *, u32, struct outer_cache_fns *);
@@ -48,13 +50,13 @@ struct l2c_init_data {
 
 #define CACHE_LINE_SIZE		32
 
-static void __iomem *l2x0_base;
 static const struct l2c_init_data *l2x0_data;
 static DEFINE_RAW_SPINLOCK(l2x0_lock);
-static u32 l2x0_way_mask;	/* Bitmask of active ways */
 static u32 l2x0_size;
 static unsigned long sync_reg_offset = L2X0_CACHE_SYNC;
 
+void __iomem *l2x0_base;
+u32 l2x0_way_mask;	/* Bitmask of active ways */
 struct l2x0_regs l2x0_saved_regs;
 
 static bool l2x0_bresp_disable;
@@ -1758,6 +1760,7 @@ int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
 	u32 cache_id, old_aux;
 	u32 cache_level = 2;
 	bool nosync = false;
+	int err;
 
 	np = of_find_matching_node(NULL, l2x0_ids);
 	if (!np)
@@ -1797,6 +1800,11 @@ int __init l2x0_of_init(u32 aux_val, u32 aux_mask)
 		pr_err("L2C: device tree specifies invalid cache level\n");
 
 	nosync = of_property_read_bool(np, "arm,outer-sync-disable");
+
+	/* Call firmware init */
+	err = call_firmware_op(l2x0_init);
+	if (err && err != -ENOSYS)
+		return err;
 
 	/* Read back current (default) hardware configuration */
 	if (data->save)
