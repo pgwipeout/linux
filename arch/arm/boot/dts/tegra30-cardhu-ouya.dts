@@ -15,9 +15,10 @@
 	/delete-node/ i2c@7000c000; /* panelddc */
 	/delete-node/ panel;
 	/delete-node/ backlight;
+	/delete-node/ isl29029@44;
 
 	/* FIXME: broken */
-	/delete-node/ cache-controller@50043000;
+	/delete-node/ cache-controller@50043000; 
 
 	aliases {
 		serial0 = &uarta;
@@ -83,6 +84,7 @@
 	};
 
 	i2c@7000d000 {
+		multi-master;
 		temperature-sensor@4c {
 			update-interval = <500>;
 			local-low = <5000>;
@@ -94,7 +96,6 @@
 			remote-offset = <(-62125)>;
 		};
 		wm8903: wm8903@1a {
-		/*	status = "disabled"; */
 		};
 	};
 
@@ -110,7 +111,7 @@
 	};
 
 	usb@7d004000 {
-		status = "disabled";
+		status = "okay";
 	};
 
 	usb-phy@7d004000 {
@@ -213,7 +214,8 @@
 			enable-active-high;
 			gpio = <&gpio TEGRA_GPIO(DD, 0) GPIO_ACTIVE_HIGH>;
 		};
-vdd_fan: regulator@9 {
+
+		vdd_fan: regulator@9 {
 
 			compatible = "regulator-fixed";
 			reg = <9>;
