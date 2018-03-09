@@ -57,6 +57,7 @@
 
 	gpio: gpio@6000d000 {
 		gpio-ranges = <&pinmux 0 0 248>;
+		#reset-cells = <1>;
 	};
 
 	serial@70006000 {
@@ -99,6 +100,7 @@
 		wm8903: wm8903@1a {
 			status = "disabled" ;
 		};
+		
 	};
 
 	pmc@7000e400 {
@@ -106,14 +108,28 @@
 		nvidia,lp0-vec = <0xbddf9000 8192>;
 	};
 
+	sdhci@78000000 {
+		status = "okay";
+	};
+
+	sdhci@78000200 {
+		status = "okay";
+	};
+
 	sdhci@78000400 {
 		status = "okay";
 		bus-width = <4>;
+		power-gpios = <&gpio TEGRA_GPIO(D, 3) GPIO_ACTIVE_HIGH>;
 		keep-power-in-suspend;
+	};
+
+	sdhci@78000600 {
+		status = "okay" ;
 	};
 
 	usb@7d004000 {
 		status = "okay";
+		vbus-supply = <&vdd_smsc>;
 	};
 
 	usb-phy@7d004000 {
@@ -218,7 +234,6 @@
 		};
 
 		vdd_fan: regulator@9 {
-
 			compatible = "regulator-fixed";
 			reg = <9>;
 			regulator-name = "+VDD_5V_FAN";
@@ -228,7 +243,15 @@
 			regulator-boot-on;
 			gpio = <&gpio TEGRA_GPIO(J, 2) GPIO_ACTIVE_HIGH>;
 		};
-
+		
+		vdd_smsc: regulator@8 {
+			compatible = "regulator-fixed";
+			reg = <8>;
+			regulator-name = "vdd_smsc";
+			regulator-always-on;
+			regulator-boot-on;
+			gpio = <&gpio TEGRA_GPIO(DD, 5) GPIO_ACTIVE_HIGH>;
+		};
 
 	};
 
@@ -243,8 +266,4 @@
 		/delete-node/ volume-down;
 		/delete-node/ volume-up;
 	};
-
-
-
-	
 };
