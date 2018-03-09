@@ -21,11 +21,12 @@
 	/delete-node/ cache-controller@50043000; 
 
 	aliases {
-		serial0 = &uarta;
+/*		serial0 = &uarta;
 		serial1 = &uartb;
 		serial2 = &uartc;
 		serial3 = &uartd;
-		serial4 = &uarte;
+		serial4 = &uarte;	*/
+		serial0 = &uartd;
 	};
 
 	memory {
@@ -96,6 +97,7 @@
 			remote-offset = <(-62125)>;
 		};
 		wm8903: wm8903@1a {
+			status = "disabled" ;
 		};
 	};
 
