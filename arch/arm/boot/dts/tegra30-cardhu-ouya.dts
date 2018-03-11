@@ -1,6 +1,7 @@
 /dts-v1/;
 
 #include "tegra30-cardhu.dtsi"
+#include "tegra30-cardhu-ouya-memory.dtsi"
 
 / {
 	model = "Ouya";
@@ -18,15 +19,46 @@
 	/delete-node/ isl29029@44;
 
 	/* FIXME: broken */
-	/delete-node/ cache-controller@50043000; 
+/*	/delete-node/ cache-controller@50043000; */
 
 	aliases {
-/*		serial0 = &uarta;
-		serial1 = &uartb;
-		serial2 = &uartc;
-		serial3 = &uartd;
-		serial4 = &uarte;	*/
 		serial0 = &uartd;
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a9";
+			reg = <0>;
+			next-level-cache = <&L2>;
+			operating-points = <
+			/* kHz    uV */
+			1700000  1350000
+			910000  1200000
+			550000  950000
+			>;
+			clock-latency = <61036>; /* two CLK32 periods */
+			#cooling-cells = <2>;
+			cooling-min-level = <0>;
+			cooling-max-level = <2>;
+		};
+		cpu@1 {
+			next-level-cache = <&L2>;
+		};
+
+		cpu@2 {
+			next-level-cache = <&L2>;
+		};
+
+		cpu@3 {
+			next-level-cache = <&L2>;
+		};
+	};
+
+	L2: cache-controller@50043000 {
 	};
 
 	memory {
@@ -43,7 +75,6 @@
 
 	host1x@50000000 {
 		dc@54200000 {
-			status = "disabled";
 			rgb {
 				status = "disabled";
 				/delete-property/ nvidia,panel;
@@ -109,22 +140,39 @@
 	};
 
 	sdhci@78000000 {
-		status = "okay";
+		status = "disabled";
+		bus-width = <4>;
+		cd-gpios = <&gpio TEGRA_GPIO(I, 5) GPIO_ACTIVE_LOW>;
+		wp-gpios = <&gpio TEGRA_GPIO(T, 3) GPIO_ACTIVE_HIGH>;
+		power-gpios = <&gpio TEGRA_GPIO(D, 3) GPIO_ACTIVE_HIGH>;
+		keep-power-in-suspend;
 	};
 
 	sdhci@78000200 {
-		status = "okay";
+		status = "disabled";
+		bus-width = <4>;
+		cd-gpios = <&gpio TEGRA_GPIO(I, 5) GPIO_ACTIVE_LOW>;
+		wp-gpios = <&gpio TEGRA_GPIO(T, 3) GPIO_ACTIVE_HIGH>;
+		power-gpios = <&gpio TEGRA_GPIO(D, 3) GPIO_ACTIVE_HIGH>;
+		keep-power-in-suspend;
 	};
 
 	sdhci@78000400 {
 		status = "okay";
 		bus-width = <4>;
+		cd-gpios = <&gpio TEGRA_GPIO(I, 5) GPIO_ACTIVE_LOW>;
+		wp-gpios = <&gpio TEGRA_GPIO(T, 3) GPIO_ACTIVE_HIGH>;
 		power-gpios = <&gpio TEGRA_GPIO(D, 3) GPIO_ACTIVE_HIGH>;
 		keep-power-in-suspend;
 	};
 
 	sdhci@78000600 {
-		status = "okay" ;
+		status = "disabled" ;
+		bus-width = <4>;
+		cd-gpios = <&gpio TEGRA_GPIO(I, 5) GPIO_ACTIVE_LOW>;
+		wp-gpios = <&gpio TEGRA_GPIO(T, 3) GPIO_ACTIVE_HIGH>;
+		power-gpios = <&gpio TEGRA_GPIO(D, 3) GPIO_ACTIVE_HIGH>;
+		keep-power-in-suspend;
 	};
 
 	usb@7d004000 {
@@ -253,6 +301,16 @@
 			gpio = <&gpio TEGRA_GPIO(DD, 5) GPIO_ACTIVE_HIGH>;
 		};
 
+		vdd_sdmmc: regulator@11 {
+			compatible = "regulator-fixed";
+			reg = <11>;
+			regulator-name = "vdd_sdmmc";
+			regulator-min-microvolt = <3200000>;
+			regulator-max-microvolt = <3200000>;
+			regulator-always-on;
+			regulator-boot-on;
+			gpio = <&gpio TEGRA_GPIO(D, 7) GPIO_ACTIVE_HIGH>;
+		};
 	};
 
 	gpio-keys {
