@@ -18,6 +18,7 @@
 #include <linux/cpumask.h>
 #include <linux/init.h>
 #include <linux/io.h>
+#include <linux/of.h>
 
 #include <soc/tegra/fuse.h>
 
@@ -89,6 +90,15 @@ static void __init tegra_cpu_reset_handler_enable(void)
 
 void __init tegra_cpu_reset_handler_init(void)
 {
+#ifdef CONFIG_TRUSTED_FOUNDATIONS
+	struct device_node *np;
+
+	np = of_find_compatible_node(NULL, NULL, "tlm,trusted-foundations");
+	if (np) {
+		__tegra_cpu_reset_handler_data[TEGRA_RESET_TF_PRESENT] = true;
+		of_node_put(np);
+	}
+#endif
 
 #ifdef CONFIG_SMP
 	__tegra_cpu_reset_handler_data[TEGRA_RESET_MASK_PRESENT] =

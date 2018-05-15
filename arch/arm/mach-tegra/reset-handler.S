@@ -80,6 +80,28 @@ ENTRY(tegra_resume)
 #endif
 
 #ifdef CONFIG_CACHE_L2X0
+#ifdef CONFIG_TRUSTED_FOUNDATIONS
+	adr	r3, __tegra_cpu_reset_handler_data
+	ldr	r0, [r3, #RESET_DATA(TF_PRESENT)]
+	cmp	r0, #0
+	beq	ca9_scu_l2_resume
+
+	adr	r3, __tegra_smc_stack
+	stmia	r3, {r4-r12, sp, lr}
+
+	mov	r0, #3	// local wake
+	mov	r3, #0
+	mov	r4, #0
+	dsb
+	.arch_extension	sec
+	smc	#0
+
+	adr	r3, __tegra_smc_stack
+	ldmia	r3, {r4-r12, sp, pc}
+
+	b	end_ca9_scu_l2_resume
+ca9_scu_l2_resume:
+#endif
 	/* L2 cache resume & re-enable */
 	bl	l2c310_early_resume
 #endif
@@ -91,6 +113,16 @@ end_ca9_scu_l2_resume:
 	b	cpu_resume
 ENDPROC(tegra_resume)
 #endif
+
+#ifdef CONFIG_TRUSTED_FOUNDATIONS
+	.align L1_CACHE_SHIFT
+	.type __tegra_smc_stack, %object
+__tegra_smc_stack:
+	.rept 11
+	.long 0
+	.endr
+	.size __tegra_smc_stack, . - __tegra_smc_stack
+#endif /* CONFIG_TRUSTED_FOUNDATIONS */
 
 	.align L1_CACHE_SHIFT
 ENTRY(__tegra_cpu_reset_handler_start)
@@ -121,6 +153,12 @@ ENTRY(__tegra_cpu_reset_handler)
 	cpsid	aif, 0x13			@ SVC mode, interrupts disabled
 
 	tegra_get_soc_id TEGRA_APB_MISC_BASE, r6
+
+	adr	r5, __tegra_cpu_reset_handler_data
+	ldr	r0, [r5, #RESET_DATA(TF_PRESENT)]
+	cmp	r0, #0
+	bne	after_errata
+
 #ifdef CONFIG_ARCH_TEGRA_2x_SOC
 t20_check:
 	cmp	r6, #TEGRA20
@@ -285,6 +323,10 @@ __tegra_cpu_reset_handler_data:
 	.equ	__tegra20_cpu1_resettable_status_offset, \
 					. - __tegra_cpu_reset_handler_start
 	.byte	0
+	.align	4
+	.globl	__tegra_tf_present
+	.equ	__tegra_tf_present, . - __tegra_cpu_reset_handler_start
+	.long	0
 	.align L1_CACHE_SHIFT
 
 ENTRY(__tegra_cpu_reset_handler_end)
