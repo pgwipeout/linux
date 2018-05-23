@@ -2004,7 +2004,7 @@
 
 	sdhci@78000000 {
 		status = "disabled";
-/* 		This is hack to fix the SMSC board's misbehavior. */
+/* 		This hack is an attempt to fix the SMSC board's misbehavior. */
 /*		status = "okay";*/
 /*		mmc-pwrseq = <&smsc_pwrseq>; */
 	};
@@ -2022,7 +2022,6 @@
 		mmc-pwrseq = <&sdhci3_pwrseq>;
 		
 		brcmf: wifi@1 {
-/*			reg = <1>;*/
 			compatible = "brcm,bcm4329-fmac";
 		};
 	};
@@ -2030,23 +2029,9 @@
 	sdhci@78000600 {
 		status = "okay";
 		non-removable; 
-/*		broken-cd;*/
-/*		keep-power-in-suspend;
-		cap-mmc-hw-reset;
-		mmc-ddr-1_8v;*/
-		max-frequency = <41000000>;
-		bus-width = <8>;
-/*		nvidia,needs-double-reset;*/
-/*		cd-gpios = <&gpio TEGRA_GPIO(I, 5) GPIO_ACTIVE_LOW>; */
-/*		wp-gpios = <&gpio TEGRA_GPIO(T, 3) GPIO_ACTIVE_HIGH>; */
-/*		vmmc-supply = <&emmc_3v3_reg>;
-		vqmmc-supply = <&ldo5_reg>; */
-/*		power-gpios = <&gpio TEGRA_GPIO(BB, 0) GPIO_OPEN_DRAIN>; */
-/*		power-gpios = <&gpio TEGRA_GPIO(EE, 4) GPIO_OPEN_DRAIN>, */
-/*			      <&gpio TEGRA_GPIO(I, 6) GPIO_ACTIVE_HIGH>, */
-/*			      <&gpio TEGRA_GPIO(K, 4) GPIO_ACTIVE_HIGH>,*/
-/*			      <&gpio TEGRA_GPIO(B, 2) GPIO_ACTIVE_HIGH>; */
-/*		mmc-pwrseq = <&sdhci4_pwrseq>; */
+		keep-power-in-suspend;
+		max-frequency = <12000000>;
+		bus-width = <1>;
 	};
 
 	usb@7d004000 {
@@ -2345,7 +2330,7 @@
 			regulator-max-microvolt = <3300000>;
 			regulator-always-on;
 			enable-active-high;
-			startup-delay-us = <7000000>;
+			startup-delay-us = <8000000>;
 			gpio = <&gpio TEGRA_GPIO(DD, 5) GPIO_ACTIVE_HIGH>;
 		};
 	};
