@@ -2034,7 +2034,7 @@
 /*		keep-power-in-suspend;
 		cap-mmc-hw-reset;
 		mmc-ddr-1_8v;*/
-/*		max-frequency = <41000000>;*/
+		max-frequency = <41000000>;
 		bus-width = <8>;
 /*		nvidia,needs-double-reset;*/
 /*		cd-gpios = <&gpio TEGRA_GPIO(I, 5) GPIO_ACTIVE_LOW>; */
@@ -2345,7 +2345,7 @@
 			regulator-max-microvolt = <3300000>;
 			regulator-always-on;
 			enable-active-high;
-/*			startup-delay-us = <7000000>;*/
+			startup-delay-us = <7000000>;
 			gpio = <&gpio TEGRA_GPIO(DD, 5) GPIO_ACTIVE_HIGH>;
 		};
 	};
