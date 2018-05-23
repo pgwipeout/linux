@@ -112,6 +112,7 @@
 		hdmi@54280000 {
 			status = "okay";
 			nvidia,hpd-gpio = <&gpio TEGRA_GPIO(N, 7) GPIO_ACTIVE_HIGH>;
+			nvidia,ddc-i2c-bus = <&hdmi_ddc>;
 		};
 	};
 
@@ -125,16 +126,10 @@
 		pinctrl-0 = <&state_default>;
 
 		state_default: pinmux {
-/*			sdmmc4_rst_pcc3 {
+			sdmmc4_rst_pcc3 {
 				nvidia,pins =	"sdmmc4_rst_n_pcc3";
 				nvidia,function = "sdmmc4";
 				nvidia,pull = <TEGRA_PIN_PULL_DOWN>;
-				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-			};
-			sdmmc4_clk_pcc4 {
-				nvidia,pins =	"sdmmc4_clk_pcc4";
-				nvidia,function = "sdmmc4";
-				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
 				nvidia,tristate = <TEGRA_PIN_DISABLE>;
 			};
 
@@ -159,7 +154,7 @@
 				nvidia,function = "sdmmc4";
 				nvidia,pull = <TEGRA_PIN_PULL_UP>;
 				nvidia,tristate = <TEGRA_PIN_DISABLE>;
-			}; */
+			};
 		};
 	};
 
@@ -184,18 +179,28 @@
 		status = "disabled";
 	};
 
+	hdmi_ddc:i2c@7000c700 {
+		status = "okay";
+		clock-frequency = <10000>;
+	};
+
 	i2c@7000d000 {
 		status = "okay";
 		multi-master;
 		clock-frequency = <400000>;
 		temperature-sensor@4c {
-			update-interval = <500>;
+			compatible = "onnn,nct1008";
+			reg = <0x4c>;
+			vcc-supply = <&sys_3v3_reg>;
+			interrupt-parent = <&gpio>;
+			interrupts = <TEGRA_GPIO(CC, 2) IRQ_TYPE_LEVEL_LOW>;
+			update-interval = <4000>;
 			local-low = <5000>;
 			local-high = <80000>;
 			local-critical = <90000>;
-			remote-low = <1000>;
-			remote-high = <80000>;
-			remote-critical = <90000>;
+			remote-low = <10>;
+			remote-high = <90000>;
+			remote-critical = <100000>;
 			remote-offset = <(-62125)>;
 		};
 		wm8903: wm8903@1a {
@@ -313,13 +318,6 @@
 				};
 			};
 		};
-		temperature-sensor@4c {
-			compatible = "onnn,nct1008";
-			reg = <0x4c>;
-			vcc-supply = <&sys_3v3_reg>;
-			interrupt-parent = <&gpio>;
-			interrupts = <TEGRA_GPIO(CC, 2) IRQ_TYPE_LEVEL_LOW>;
-		};
 
 		tps62361@60 {
 			compatible = "ti,tps62361";
@@ -359,8 +357,8 @@
 	sdhci@78000000 {
 		status = "disabled";
 /* 		This is hack to fix the SMSC board's misbehavior. */
-/*		status = "okay";
-		mmc-pwrseq = <&smsc_pwrseq>; */
+/*		status = "okay";*/
+/*		mmc-pwrseq = <&smsc_pwrseq>; */
 	};
 
 	sdhci@78000200 {
@@ -387,8 +385,7 @@
 /*		broken-cd;*/
 /*		keep-power-in-suspend;
 		cap-mmc-hw-reset;
-		no-1-8-v;
-		mmc-ddr-1_2v;*/
+		mmc-ddr-1_8v;*/
 /*		max-frequency = <41000000>;*/
 		bus-width = <8>;
 /*		nvidia,needs-double-reset;*/
@@ -407,11 +404,11 @@
 	usb@7d004000 {
 		status = "okay";
 /*		vbus-supply = <&vdd_smsc>;*/
-		mmc-pwrseq = <&smsc_pwrseq>;
+/*		mmc-pwrseq = <&smsc_pwrseq>;*/
 	};
 
 	usb-phy@7d004000 {
-/*		vbus-supply = <&vdd_smsc>; */
+		vbus-supply = <&vdd_smsc>; 
 		nvidia,hssync-start-delay = <0>;
 		nvidia,xcvr-setup = <15>;
 		nvidia,xcvr-hsslew = <8>;
@@ -680,25 +677,29 @@
 			gpio = <&gpio TEGRA_GPIO(DD, 0) GPIO_ACTIVE_HIGH>;
 		};
 
-		vdd_fan: regulator@13 {
+		vdd_fan: regulator@107 {
 			compatible = "regulator-fixed";
-			reg = <9>;
+			reg = <107>;
 			regulator-name = "+VDD_5V_FAN";
 			regulator-min-microvolt = <2000000>;
 			regulator-max-microvolt = <2000000>;
 			regulator-always-on;
 			regulator-boot-on;
+			enable-active-high;
 			gpio = <&gpio TEGRA_GPIO(J, 2) GPIO_ACTIVE_HIGH>;
 		};
 		
-/*		vdd_smsc: regulator@14 {
+		vdd_smsc: regulator@108 {
 			compatible = "regulator-fixed";
-			reg = <8>;
+			reg = <108>;
 			regulator-name = "vdd_smsc";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
 			regulator-always-on;
-			startup-delay-us = <6000000>;
+			enable-active-high;
+/*			startup-delay-us = <7000000>;*/
 			gpio = <&gpio TEGRA_GPIO(DD, 5) GPIO_ACTIVE_HIGH>;
-		};*/
+		};
 	};
 
 	sound {
@@ -738,11 +739,11 @@
 		};
 	};
 
-	smsc_pwrseq: smsc_pwrseq {
+/*	smsc_pwrseq: smsc_pwrseq {
 		compatible = "mmc-pwrseq-simple";
 		reset-gpios = <&gpio TEGRA_GPIO(DD, 5) GPIO_ACTIVE_LOW>;
 		post-power-on-delay-ms = <1000>;
-	};
+	};*/
 
 
 	sdhci3_pwrseq: sdhci3_pwrseq {
