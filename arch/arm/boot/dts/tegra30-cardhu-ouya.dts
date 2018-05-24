@@ -1949,6 +1949,7 @@
 					regulator-name = "avdd_dsi_csi,pwrdet_mipi";
 					regulator-min-microvolt = <1200000>;
 					regulator-max-microvolt = <1200000>;
+					regulator-always-on;
 				};
 
 				ldo7_reg: ldo7 {
@@ -2152,6 +2153,7 @@
 			regulator-min-microvolt = <2800000>;
 			regulator-max-microvolt = <2800000>;
 			enable-active-high;
+			regulator-always-on;
 			gpio = <&gpio TEGRA_GPIO(R, 6) GPIO_ACTIVE_HIGH>;
 			vin-supply = <&sys_3v3_reg>;
 		};
@@ -2163,6 +2165,7 @@
 			regulator-min-microvolt = <2800000>;
 			regulator-max-microvolt = <2800000>;
 			enable-active-high;
+			regulator-always-on;
 			gpio = <&gpio TEGRA_GPIO(R, 7) GPIO_ACTIVE_HIGH>;
 			vin-supply = <&sys_3v3_reg>;
 		};
@@ -2222,6 +2225,7 @@
 			regulator-min-microvolt = <5000000>;
 			regulator-max-microvolt = <5000000>;
 			enable-active-high;
+			regulator-always-on;
 			gpio = <&gpio TEGRA_GPIO(T, 0) GPIO_ACTIVE_HIGH>;
 			gpio-open-drain;
 			vin-supply = <&vdd_5v0_reg>;
@@ -2330,7 +2334,8 @@
 			regulator-max-microvolt = <3300000>;
 			regulator-always-on;
 			enable-active-high;
-			startup-delay-us = <8000000>;
+			gpio-open-drain;
+/*			startup-delay-us = <8000000>; */
 			gpio = <&gpio TEGRA_GPIO(DD, 5) GPIO_ACTIVE_HIGH>;
 		};
 	};
