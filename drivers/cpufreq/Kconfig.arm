@@ -267,6 +267,13 @@ config ARM_TEGRA20_CPUFREQ
 	help
 	  This adds the CPUFreq driver support for Tegra20 SOCs.
 
+config ARM_TEGRA30_CPUFREQ
+	tristate "Tegra30 CPUFreq support"
+	depends on ARCH_TEGRA
+	default y
+	help
+	  This adds the CPUFreq driver support for Tegra30 SOCs.
+
 config ARM_TEGRA124_CPUFREQ
 	tristate "Tegra124 CPUFreq support"
 	depends on ARCH_TEGRA && CPUFREQ_DT && REGULATOR
