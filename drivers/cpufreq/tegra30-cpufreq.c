@@ -44,7 +44,7 @@ struct tegra30_cpufreq {
 	struct cpufreq_driver driver;
 	struct clk *cpu_clk;
 	struct clk *pll_x_clk;
-	struct clk *pll_c_clk;
+	struct clk *pll_p_cclkg_clk;
 	bool pll_x_prepared;
 };
 
@@ -52,7 +52,7 @@ static unsigned int tegra_get_intermediate(struct cpufreq_policy *policy,
 					   unsigned int index)
 {
 	struct tegra30_cpufreq *cpufreq = cpufreq_get_driver_data();
-	unsigned int ifreq = clk_get_rate(cpufreq->pll_c_clk) / 1000;
+	unsigned int ifreq = clk_get_rate(cpufreq->pll_p_cclkg_clk) / 1000;
 
 	/*
 	 * Don't switch to intermediate freq if:
@@ -83,7 +83,7 @@ static int tegra_target_intermediate(struct cpufreq_policy *policy,
 	 */
 	clk_prepare_enable(cpufreq->pll_x_clk);
 
-	ret = clk_set_parent(cpufreq->cpu_clk, cpufreq->pll_c_clk);
+	ret = clk_set_parent(cpufreq->cpu_clk, cpufreq->pll_p_cclkg_clk);
 	if (ret)
 		clk_disable_unprepare(cpufreq->pll_x_clk);
 	else
@@ -96,7 +96,7 @@ static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
 {
 	struct tegra30_cpufreq *cpufreq = cpufreq_get_driver_data();
 	unsigned long rate = freq_table[index].frequency;
-	unsigned int ifreq = clk_get_rate(cpufreq->pll_c_clk) / 1000;
+	unsigned int ifreq = clk_get_rate(cpufreq->pll_p_cclkg_clk) / 1000;
 	int ret;
 
 	/*
@@ -104,7 +104,7 @@ static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
 	 * as it isn't used anymore.
 	 */
 	if (rate == ifreq)
-		return clk_set_parent(cpufreq->cpu_clk, cpufreq->pll_c_clk);
+		return clk_set_parent(cpufreq->cpu_clk, cpufreq->pll_p_cclkg_clk);
 
 	ret = clk_set_rate(cpufreq->pll_x_clk, rate * 1000);
 	/* Restore to earlier frequency on error, i.e. pll_x */
@@ -187,9 +187,9 @@ static int tegra30_cpufreq_probe(struct platform_device *pdev)
 		goto put_cpu;
 	}
 
-	cpufreq->pll_c_clk = clk_get_sys(NULL, "pll_c");
-	if (IS_ERR(cpufreq->pll_c_clk)) {
-		err = PTR_ERR(cpufreq->pll_c_clk);
+	cpufreq->pll_p_cclkg_clk = clk_get_sys(NULL, "pll_c");
+	if (IS_ERR(cpufreq->pll_p_cclkg_clk)) {
+		err = PTR_ERR(cpufreq->pll_p_cclkg_clk);
 		goto put_pll_x;
 	}
 
@@ -216,7 +216,7 @@ static int tegra30_cpufreq_probe(struct platform_device *pdev)
 	return 0;
 
 put_pll_c:
-	clk_put(cpufreq->pll_c_clk);
+	clk_put(cpufreq->pll_p_cclkg_clk);
 put_pll_x:
 	clk_put(cpufreq->pll_x_clk);
 put_cpu:
@@ -232,7 +232,7 @@ static int tegra30_cpufreq_remove(struct platform_device *pdev)
 
 	cpufreq_unregister_driver(&cpufreq->driver);
 
-	clk_put(cpufreq->pll_c_clk);
+	clk_put(cpufreq->pll_p_cclkg_clk);
 	clk_put(cpufreq->pll_x_clk);
 	clk_put(cpufreq->cpu_clk);
 

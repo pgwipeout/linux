@@ -184,6 +184,10 @@
 	hdmi_ddc:i2c@7000c700 {
 		status = "okay";
 		clock-frequency = <100000>;
+		
+		edid@50 {
+			reg=<0x50>;
+		};
 	};
 
 	i2c@7000d000 {
