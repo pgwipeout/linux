@@ -204,8 +204,8 @@
 			remote-high = <90000>;
 			remote-critical = <100000>;
 			remote-offset = <(-62125)>;
-*/		};
-
+		};
+*/
 		pmic: tps65911@2d {
 			compatible = "ti,tps65911";
 			reg = <0x2d>;
