@@ -109,7 +109,7 @@
 	host1x@50000000 {
 		hdmi@54280000 {
 			status = "okay";
-			nvidia,hpd-gpio = <&gpio TEGRA_GPIO(N, 7) GPIO_ACTIVE_LOW>;
+			nvidia,hpd-gpio = <&gpio TEGRA_GPIO(N, 7) GPIO_ACTIVE_HIGH>;
 			nvidia,ddc-i2c-bus = <&hdmi_ddc>;
 		};
 	};
@@ -443,6 +443,7 @@
 			gpio = <&gpio TEGRA_GPIO(BB, 4) GPIO_ACTIVE_HIGH>;
 			vin-supply = <&vio_reg>;
 			regulator-always-on;
+			regulator-boot-on;
 		};
 
 		cp_5v_reg: regulator@2 {
@@ -479,6 +480,7 @@
 			enable-active-high;
 			gpio = <&gpio TEGRA_GPIO(D, 6) GPIO_ACTIVE_HIGH>;
 			regulator-always-on;
+			regulator-boot-on;
 		};
 
 		pex_hvdd_3v3_reg: regulator@5 {
@@ -491,6 +493,7 @@
 			gpio = <&gpio TEGRA_GPIO(L, 7) GPIO_ACTIVE_HIGH>;
 			vin-supply = <&sys_3v3_reg>;
 			regulator-always-on;
+			regulator-boot-on;
 		};
 
 		vdd_cam1_ldo_reg: regulator@6 {
@@ -503,6 +506,7 @@
 			regulator-always-on;
 			gpio = <&gpio TEGRA_GPIO(R, 6) GPIO_ACTIVE_HIGH>;
 			vin-supply = <&sys_3v3_reg>;
+			regulator-boot-on;
 		};
 
 		vdd_cam2_ldo_reg: regulator@7 {
@@ -515,6 +519,7 @@
 			regulator-always-on;
 			gpio = <&gpio TEGRA_GPIO(R, 7) GPIO_ACTIVE_HIGH>;
 			vin-supply = <&sys_3v3_reg>;
+			regulator-boot-on;
 		};
 
 		vdd_cam3_ldo_reg: regulator@8 {
@@ -527,6 +532,7 @@
 			gpio = <&gpio TEGRA_GPIO(S, 0) GPIO_ACTIVE_HIGH>;
 			vin-supply = <&sys_3v3_reg>;
 			regulator-always-on;
+			regulator-boot-on;
 		};
 
 		vdd_com_reg: regulator@9 {
@@ -578,6 +584,7 @@
 			gpio = <&gpio TEGRA_GPIO(T, 0) GPIO_ACTIVE_HIGH>;
 			gpio-open-drain;
 			vin-supply = <&vdd_5v0_reg>;
+			regulator-boot-on;
 		};
 
 		ddr_reg: regulator@100 {
@@ -638,6 +645,7 @@
 			enable-active-high;
 			gpio = <&pmic 8 GPIO_ACTIVE_HIGH>;
 			regulator-always-on;
+			regulator-boot-on;
 		};
 
 		vdd_bl_reg: regulator@105 {
