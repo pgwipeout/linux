@@ -1,5 +1,9 @@
 /dts-v1/;
 
+/* This DTS file group supports the OUYA on modern kernels. */
+/* The bootloader is extremely basic, and leaves the system in a barely usable state. */
+/* This means we have to do everything the bootloader is supposed to do. */
+
 #include <dt-bindings/input/input.h>
 #include "tegra30.dtsi"
 #include "tegra30-ouya-memory.dtsi"
@@ -179,14 +183,14 @@
 
 	hdmi_ddc:i2c@7000c700 {
 		status = "okay";
-		clock-frequency = <10000>;
+		clock-frequency = <100000>;
 	};
 
 	i2c@7000d000 {
 		status = "okay";
 		multi-master;
 		clock-frequency = <400000>;
-		temperature-sensor@4c {
+/*		temperature-sensor@4c {
 			compatible = "onnn,nct1008";
 			reg = <0x4c>;
 			vcc-supply = <&sys_3v3_reg>;
@@ -200,7 +204,7 @@
 			remote-high = <90000>;
 			remote-critical = <100000>;
 			remote-offset = <(-62125)>;
-		};
+*/		};
 
 		pmic: tps65911@2d {
 			compatible = "ti,tps65911";
@@ -683,13 +687,10 @@
 
 	hda@70030000 {
 		compatible = "nvidia,tegra30-hda";
-		status = "disabled";
 	};
 
 	gpio-keys {
 		power {
-			/delete-property/ interrupt-parent;
-			/delete-property/ interrupts;
 			gpios = <&gpio TEGRA_GPIO(V, 0) GPIO_ACTIVE_LOW>;
 			debounce-interval = <10>;
 		};
