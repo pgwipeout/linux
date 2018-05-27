@@ -89,17 +89,6 @@ config BT_HCIUART
 	  Say Y here to compile support for Bluetooth UART devices into the
 	  kernel or say M to compile it as module (hci_uart).
 
-config BT_HCIUART_BCM
-	tristate "Broadcom HCI UART driver"
-	depends on BT_HCIUART
-	help
-	  Broadcom Bluetooth HCI UART driver.
-	  This driver is required if you want to use Broadcom Bluetooth devices with
-	  serial port interface. 
-
-	  Say Y here to compile support for Broadcom Bluetooth UART devices into the
-	  kernel or say M to compile it as module (hci_bcm).
-
 config BT_HCIUART_SERDEV
 	bool
 	depends on SERIAL_DEV_BUS && BT_HCIUART
@@ -114,6 +103,15 @@ config BT_HCIUART_H4
 	  with UART interface, including PCMCIA and CF cards.
 
 	  Say Y here to compile support for HCI UART (H4) protocol.
+
+config BT_HCIUART_BCM
+	bool "Broadcom HCI UART driver"
+	help
+	  Broadcom Bluetooth HCI UART driver.
+	  This driver is required if you want to use Broadcom Bluetooth devices with
+	  serial port interface. 
+
+	  Say Y here to compile support for Broadcom Bluetooth UART devices. (hci_bcm).
 
 config BT_HCIUART_NOKIA
 	tristate "UART Nokia H4+ protocol support"
