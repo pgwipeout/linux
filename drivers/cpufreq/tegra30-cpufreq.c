@@ -98,7 +98,7 @@ static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
 	int ret;
 
 	/*
-	 * target freq == pll_p, don't need to take extra reference to pll_x_clk
+	 * target freq == pll_p_cclkg, don't need to take extra reference to pll_x_clk
 	 * as it isn't used anymore.
 	 */
 	if (rate == ifreq)
@@ -185,7 +185,7 @@ static int tegra30_cpufreq_probe(struct platform_device *pdev)
 		goto put_cpu;
 	}
 
-	cpufreq->pll_p_cclkg_clk = clk_get_sys(NULL, "pll_p");
+	cpufreq->pll_p_cclkg_clk = clk_get_sys(NULL, "pll_p_cclkg");
 	if (IS_ERR(cpufreq->pll_p_cclkg_clk)) {
 		err = PTR_ERR(cpufreq->pll_p_cclkg_clk);
 		goto put_pll_x;
@@ -207,13 +207,13 @@ static int tegra30_cpufreq_probe(struct platform_device *pdev)
 
 	err = cpufreq_register_driver(&cpufreq->driver);
 	if (err)
-		goto put_pll_p;
+		goto put_pll_p_cclkg;
 
 	platform_set_drvdata(pdev, cpufreq);
 
 	return 0;
 
-put_pll_p:
+put_pll_p_cclkg:
 	clk_put(cpufreq->pll_p_cclkg_clk);
 put_pll_x:
 	clk_put(cpufreq->pll_x_clk);
