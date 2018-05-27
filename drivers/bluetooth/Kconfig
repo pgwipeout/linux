@@ -104,20 +104,6 @@ config BT_HCIUART_H4
 
 	  Say Y here to compile support for HCI UART (H4) protocol.
 
-config BT_HCIUART_BCM
-	bool "Broadcom HCI UART driver"
-	depends on BT_HCIUART
-	depends on BT_HCIUART_SERDEV
-	depends on GPIOLIB
-	select BT_HCIUART_H4
-	select BT_BCM
-	help
-	  Broadcom Bluetooth HCI UART driver.
-	  This driver is required if you want to use Broadcom Bluetooth devices with
-	  serial port interface. 
-
-	  Say Y here to compile support for Broadcom Bluetooth UART devices. (hci_bcm).
-
 config BT_HCIUART_NOKIA
 	tristate "UART Nokia H4+ protocol support"
 	depends on BT_HCIUART
