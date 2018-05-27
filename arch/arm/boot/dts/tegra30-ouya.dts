@@ -130,7 +130,6 @@
 		sdmmc4_default:pinmux {
 			sdmmc4_clk {
 				nvidia,pins = "sdmmc4_clk_pcc4";
-				nvidia,pull-down-strength = <11>;
 				nvidia,pull-up-strength = <11>;
 				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_FAST>;
 				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_FAST>;
@@ -174,7 +173,7 @@
 		
 		bluetooth {
 			compatible = "brcm,bcm43438-bt";
-/*			max-speed = <921600>; */
+			max-speed = <2000000>;
 			shutdown-gpios = <&gpio TEGRA_GPIO(U, 0) GPIO_ACTIVE_HIGH>;
 			device-wakeup-gpios = <&gpio TEGRA_GPIO(U, 1) GPIO_ACTIVE_HIGH>;
 			host-wakeup-gpios = <&gpio TEGRA_GPIO(U, 6) GPIO_ACTIVE_LOW>;
@@ -193,10 +192,6 @@
 	hdmi_ddc:i2c@7000c700 {
 		status = "okay";
 		clock-frequency = <100000>;
-		
-		edid@50 {
-			reg=<0x50>;
-		};
 	};
 
 	i2c@7000d000 {
@@ -349,6 +344,13 @@
 		nvidia,core-pwr-off-time = <0>;
 		nvidia,core-power-req-active-high;
 		nvidia,sys-clock-req-active-high;
+	};
+
+	memory-controller@7000f400 {
+		compatible = "nvidia,tegra30-emc";
+		reg = <0x7000f400 0x200>;
+		#address-cells = <1>;
+		#size-cells = <0>;
 	};
 
 	ahub@70080000 {
