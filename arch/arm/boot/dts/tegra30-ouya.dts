@@ -27,8 +27,8 @@
 	/* FIXME: broken */
 
 	aliases {
-		rtc0 = "/rtc@7000e000";
-		rtc1 = "/i2c@7000d000/tps65911@2d";
+		rtc0 = "/i2c@7000d000/tps65911@2d";
+		rtc1 = "/rtc@7000e000";
 		serial0 = &uartd;
 	};
 

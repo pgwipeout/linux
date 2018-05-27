@@ -22,8 +22,6 @@
 #include <linux/types.h>
 
 static struct cpufreq_frequency_table freq_table[] = {
-	{ .frequency = 204000 },
-	{ .frequency = 306000 },
 	{ .frequency = 408000 },
 	{ .frequency = 612000 },
 	{ .frequency = 760000 },
