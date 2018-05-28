@@ -575,7 +575,7 @@ CONFIG_ZBOOT_ROM_TEXT=0x0
 CONFIG_ZBOOT_ROM_BSS=0x0
 CONFIG_ARM_APPENDED_DTB=y
 # CONFIG_ARM_ATAG_DTB_COMPAT is not set
-CONFIG_CMDLINE="earlyprintk panic=5 console=ttyS0,115200n8 console=tty0 clk_ignore_unused root=/dev/mmcblk0p9 ro rootwait gpt gpt_sector=15073279 drm.debug=0xe video=HDMI-A-1:1280x720@60"
+CONFIG_CMDLINE="earlyprintk panic=5 console=ttyS0,115200n8 console=tty1 clk_ignore_unused root=/dev/mmcblk0p9 ro rootwait gpt gpt_sector=15073279 drm.debug=0xe video=HDMI-A-1:1280x720@60"
 CONFIG_KEXEC=y
 # CONFIG_CRASH_DUMP is not set
 CONFIG_AUTO_ZRELADDR=y
