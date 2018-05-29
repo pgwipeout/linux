@@ -437,16 +437,12 @@ struct emc_timing {
 	u32 emc_burst_data[ARRAY_SIZE(emc_burst_regs)];
 
 	u32 emc_auto_cal_config;
-	u32 emc_auto_cal_config2;
-	u32 emc_auto_cal_config3;
 	u32 emc_auto_cal_interval;
-	u32 emc_bgbias_ctl0;
 	u32 emc_cfg;
 	u32 emc_cfg_2;
 	u32 emc_ctt_term_ctrl;
 	u32 emc_mode_1;
 	u32 emc_mode_2;
-	u32 emc_mode_4;
 	u32 emc_mode_reset;
 	u32 emc_mrs_wait_cnt;
 	u32 emc_sel_dpd_ctrl;
@@ -595,7 +591,7 @@ int tegra_emc_prepare_timing_change(struct tegra_emc *emc,
 	}
 
 	/* Prepare DQ/DQS for clock change */
-	val = readl(emc->regs + EMC_BGBIAS_CTL0);
+/*	val = readl(emc->regs + EMC_BGBIAS_CTL0);
 	val2 = last->emc_bgbias_ctl0;
 	if (!(timing->emc_bgbias_ctl0 &
 	      EMC_BGBIAS_CTL0_BIAS0_DSC_E_PWRD_IBIAS_RX) &&
@@ -614,7 +610,7 @@ int tegra_emc_prepare_timing_change(struct tegra_emc *emc,
 		if (pre_wait < 5)
 			pre_wait = 5;
 	}
-
+*/
 	update = false;
 	val = readl(emc->regs + EMC_XM2DQSPADCTRL2);
 	if (timing->emc_xm2dqspadctrl2 & EMC_XM2DQSPADCTRL2_VREF_ENABLE &&
@@ -663,7 +659,7 @@ int tegra_emc_prepare_timing_change(struct tegra_emc *emc,
 	emc_ccfifo_writel(emc, val, EMC_CFG);
 
 	/* Program AUTO_CAL_CONFIG */
-	if (timing->emc_auto_cal_config2 != last->emc_auto_cal_config2)
+/*	if (timing->emc_auto_cal_config2 != last->emc_auto_cal_config2)
 		emc_ccfifo_writel(emc, timing->emc_auto_cal_config2,
 				  EMC_AUTO_CAL_CONFIG2);
 
@@ -676,7 +672,7 @@ int tegra_emc_prepare_timing_change(struct tegra_emc *emc,
 		val &= EMC_AUTO_CAL_CONFIG_AUTO_CAL_START;
 		emc_ccfifo_writel(emc, val, EMC_AUTO_CAL_CONFIG);
 	}
-
+*/
 	/* DDR3: predict MRS long wait count */
 	if (emc->dram_type == DRAM_TYPE_DDR3 &&
 	    dll_change == DLL_CHANGE_ON) {
@@ -750,9 +746,9 @@ int tegra_emc_prepare_timing_change(struct tegra_emc *emc,
 			emc_ccfifo_writel(emc, timing->emc_mode_2, EMC_MRW2);
 		if (timing->emc_mode_1 != last->emc_mode_1)
 			emc_ccfifo_writel(emc, timing->emc_mode_1, EMC_MRW);
-		if (timing->emc_mode_4 != last->emc_mode_4)
+/*		if (timing->emc_mode_4 != last->emc_mode_4)
 			emc_ccfifo_writel(emc, timing->emc_mode_4, EMC_MRW4);
-	}
+*/	}
 
 	/*  Issue ZCAL command if turning ZCAL on */
 	if (timing->emc_zcal_interval != 0 && last->emc_zcal_interval == 0) {
@@ -803,7 +799,7 @@ void tegra_emc_complete_timing_change(struct tegra_emc *emc,
 	writel(timing->emc_zcal_cnt_long, emc->regs + EMC_ZCAL_WAIT_CNT);
 
 	/* LPDDR3: Turn off BGBIAS if low frequency */
-	if (emc->dram_type == DRAM_TYPE_LPDDR3 &&
+/*	if (emc->dram_type == DRAM_TYPE_LPDDR3 &&
 	    timing->emc_bgbias_ctl0 &
 	      EMC_BGBIAS_CTL0_BIAS0_DSC_E_PWRD_IBIAS_RX) {
 		val = timing->emc_bgbias_ctl0;
@@ -821,7 +817,7 @@ void tegra_emc_complete_timing_change(struct tegra_emc *emc,
 		writel(timing->emc_auto_cal_interval,
 		       emc->regs + EMC_AUTO_CAL_INTERVAL);
 	}
-
+*/
 	/* Wait for timing to settle */
 	udelay(2);
 
@@ -849,8 +845,8 @@ static void emc_read_current_timing(struct tegra_emc *emc,
 	timing->emc_zcal_cnt_long = 0;
 	timing->emc_mode_1 = 0;
 	timing->emc_mode_2 = 0;
-	timing->emc_mode_4 = 0;
-	timing->emc_mode_reset = 0;
+/*	timing->emc_mode_4 = 0;
+*/	timing->emc_mode_reset = 0;
 }
 
 static int emc_init(struct tegra_emc *emc)
@@ -902,17 +898,17 @@ static int load_one_timing_from_dt(struct tegra_emc *emc,
 }
 
 	EMC_READ_PROP(emc_auto_cal_config, "nvidia,emc-auto-cal-config")
-	EMC_READ_PROP(emc_auto_cal_config2, "nvidia,emc-auto-cal-config2")
+/*	EMC_READ_PROP(emc_auto_cal_config2, "nvidia,emc-auto-cal-config2")
 	EMC_READ_PROP(emc_auto_cal_config3, "nvidia,emc-auto-cal-config3")
-	EMC_READ_PROP(emc_auto_cal_interval, "nvidia,emc-auto-cal-interval")
-	EMC_READ_PROP(emc_bgbias_ctl0, "nvidia,emc-bgbias-ctl0")
-	EMC_READ_PROP(emc_cfg, "nvidia,emc-cfg")
+*/	EMC_READ_PROP(emc_auto_cal_interval, "nvidia,emc-auto-cal-interval")
+/*	EMC_READ_PROP(emc_bgbias_ctl0, "nvidia,emc-bgbias-ctl0")
+*/	EMC_READ_PROP(emc_cfg, "nvidia,emc-cfg")
 	EMC_READ_PROP(emc_cfg_2, "nvidia,emc-cfg-2")
 	EMC_READ_PROP(emc_ctt_term_ctrl, "nvidia,emc-ctt-term-ctrl")
 	EMC_READ_PROP(emc_mode_1, "nvidia,emc-mode-1")
 	EMC_READ_PROP(emc_mode_2, "nvidia,emc-mode-2")
-	EMC_READ_PROP(emc_mode_4, "nvidia,emc-mode-4")
-	EMC_READ_PROP(emc_mode_reset, "nvidia,emc-mode-reset")
+/*	EMC_READ_PROP(emc_mode_4, "nvidia,emc-mode-4")
+*/	EMC_READ_PROP(emc_mode_reset, "nvidia,emc-mode-reset")
 	EMC_READ_PROP(emc_mrs_wait_cnt, "nvidia,emc-mrs-wait-cnt")
 	EMC_READ_PROP(emc_sel_dpd_ctrl, "nvidia,emc-sel-dpd-ctrl")
 	EMC_READ_PROP(emc_xm2dqspadctrl2, "nvidia,emc-xm2dqspadctrl2")
@@ -1143,6 +1139,7 @@ static int tegra_emc_probe(struct platform_device *pdev)
 	if (IS_ENABLED(CONFIG_DEBUG_FS))
 		emc_debugfs_init(&pdev->dev, emc);
 
+	pr_warn("WARNING, EXPERIMENTAL EMC DRIVER HAS LOADED");
 	return 0;
 };
 

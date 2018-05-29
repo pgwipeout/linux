@@ -135,10 +135,6 @@
 			};
 			sdmmc4_cmd {
 				nvidia,pins = "sdmmc4_cmd_pt7";
-				nvidia,pull-down-strength = <11>;
-				nvidia,pull-up-strength = <11>;
-				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_FAST>;
-				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_FAST>; 
 			};
 			sdmmc4_dat0 {
 				nvidia,pins = "sdmmc4_dat0_paa0",
@@ -345,11 +341,12 @@
 		nvidia,sys-clock-req-active-high;
 	};
 
-	memory-controller@7000f400 {
+	emc: memory-controller@7000f400 {
 		compatible = "nvidia,tegra30-emc";
 		reg = <0x7000f400 0x200>;
 		#address-cells = <1>;
 		#size-cells = <0>;
+		nvidia,memory-controller = <&mc>;
 	};
 
 	ahub@70080000 {
@@ -386,7 +383,7 @@
 		keep-power-in-suspend;
 /*		mmc-ddr-1_8v;
 */		mmc-hs200-1_8v;
-		max-frequency = <32000000>;
+		max-frequency = <30000000>;
 		bus-width = <8>;
 		pinctrl-0 = <&sdmmc4_default>;
 	};
