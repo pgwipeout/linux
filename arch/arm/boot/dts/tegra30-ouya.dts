@@ -12,19 +12,6 @@
 	model = "Ouya";
 	compatible = "nvidia,ouya", "nvidia,tegra30";
 
-	/* Already disabled */
-	/delete-node/ usb@7d000000;
-	/delete-node/ usb-phy@7d000000;
-
-	/* Explicitly disabled */
-	/delete-node/ pcie-controller@00003000;
-/*	/delete-node/ i2c@7000c000; */ /* panelddc */
-/*	/delete-node/ panel; */
-/*	/delete-node/ backlight; */
-	/delete-node/ isl29029@44;
-
-	/* FIXME: broken */
-
 	aliases {
 		rtc0 = "/i2c@7000d000/tps65911@2d";
 		rtc1 = "/rtc@7000e000";
@@ -503,6 +490,16 @@
 		bus-width = <8>;
 		pinctrl-0 = <&sdmmc4_default>;
 	};
+
+	usb@7d000000 {
+		status = "okay";
+	};
+
+	usb-phy@7d000000 {
+		status = "okay";
+		dr_mode = "otg";
+		vbus-supply = <&usb1_vbus_reg>;
+	}
 
 	usb@7d004000 {
 		status = "okay";
