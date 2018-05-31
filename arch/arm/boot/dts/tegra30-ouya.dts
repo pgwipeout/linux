@@ -22,6 +22,7 @@
 
 	chosen {
 		stdout-path = "serial0:115200n8";
+		bootargs = "earlyprintk gpt gpt_sector=15073279 panic=5 console=ttyS0,115200n8 console=tty0 root=/dev/sda1 ro rootwait drm.debug=0xe video=HDMI-A-1:1280x720@60";
 	};
 
 	cpus {
@@ -204,6 +205,7 @@
 			interrupt-controller;
 
 			ti,system-power-controller;
+			system-power-controller;
 
 			#gpio-cells = <2>;
 			gpio-controller;
@@ -499,7 +501,7 @@
 		status = "okay";
 		dr_mode = "otg";
 		vbus-supply = <&usb1_vbus_reg>;
-	}
+	};
 
 	usb@7d004000 {
 		status = "okay";
@@ -738,7 +740,7 @@
 			regulator-min-microvolt = <5000000>;
 			regulator-max-microvolt = <5000000>;
 			enable-active-high;
-			gpio = <&gpio TEGRA_GPIO(DD, 6) GPIO_ACTIVE_HIGH>;
+			gpio = <&gpio TEGRA_GPIO(DD, 4) GPIO_ACTIVE_HIGH>;
 			gpio-open-drain;
 			vin-supply = <&vdd_5v0_reg>;
 			regulator-always-on;
@@ -751,7 +753,7 @@
 			regulator-min-microvolt = <5000000>;
 			regulator-max-microvolt = <5000000>;
 			enable-active-high;
-			gpio = <&gpio TEGRA_GPIO(DD, 4) GPIO_ACTIVE_HIGH>;
+			gpio = <&gpio TEGRA_GPIO(DD, 6) GPIO_ACTIVE_HIGH>;
 			gpio-open-drain;
 			vin-supply = <&vdd_5v0_reg>;
 		};
