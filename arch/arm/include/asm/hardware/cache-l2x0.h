@@ -193,6 +193,8 @@ struct l2x0_regs {
 	unsigned long aux2_ctrl;
 };
 
+extern void __iomem *l2x0_base;
+extern u32 l2x0_way_mask;
 extern struct l2x0_regs l2x0_saved_regs;
 
 #endif /* __ASSEMBLY__ */
