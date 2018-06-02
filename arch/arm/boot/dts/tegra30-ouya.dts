@@ -22,7 +22,7 @@
 
 	chosen {
 		stdout-path = "serial0:115200n8";
-		bootargs = "earlyprintk gpt gpt_sector=15073279 panic=5 console=ttyS0,115200n8 console=tty0 root=/dev/sda1 ro rootwait drm.debug=0xe video=HDMI-A-1:1280x720@60";
+		bootargs = "earlyprintk gpt gpt_sector=15073279 clk_ignore_unused panic=5 console=ttyS0,115200n8 root=/dev/sda1 ro rootwait drm.debug=0xe video=HDMI-A-1:1280x720@60";
 	};
 
 	cpus {
@@ -50,6 +50,7 @@
 			#cooling-cells = <2>;
 			cooling-min-level = <0>;
 			cooling-max-level = <2>;
+			assigned-clocks = <&tegra_car TEGRA30_CLK_CCLK_G>;
 			clocks = <&tegra_car TEGRA30_CLK_CCLK_G>,
 				 <&tegra_car TEGRA30_CLK_PLL_X>,
 				 <&tegra_car TEGRA30_CLK_PLL_P>;
@@ -133,11 +134,11 @@
 					      "sdmmc4_dat6_paa6",
 					      "sdmmc4_dat7_paa7",
 					      "sdmmc4_rst_n_pcc3";
-				nvidia,pull-down-strength = <1>;
-				nvidia,pull-up-strength = <1>;
+/*				nvidia,pull-down-strength = <1>; 
+				nvidia,pull-up-strength = <1>; 
 				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_FAST>;
 				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_FAST>;
-			};
+*/			};
 		};
 	};
 
@@ -307,7 +308,8 @@
 
 			regulator-name = "tps62361-vout";
 			regulator-min-microvolt = <500000>;
-			regulator-max-microvolt = <1500000>;
+			regulator-max-microvolt = <1770000>;
+			vin-supply = <&vdd1_reg>;
 			regulator-boot-on;
 			regulator-always-on;
 			ti,vsel0-state-high;
@@ -472,7 +474,7 @@
 	sdhci@78000400 {
 		status = "okay";
 		non-removable;
-/*		max-frequency = <41000000>;*/
+		max-frequency = <41000000>;
 		power-gpios = <&gpio TEGRA_GPIO(D, 4) GPIO_ACTIVE_HIGH>;
 		bus-width = <4>;
 		mmc-pwrseq = <&sdhci3_pwrseq>;
@@ -505,6 +507,13 @@
 
 	usb@7d004000 {
 		status = "okay";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		smsc@2 { /* SMSC 10/100T Ethernet Controller */
+			compatible = "usb424,9e00";
+			reg = <2>;
+		};
 	};
 
 	usb-phy@7d004000 {
@@ -578,6 +587,8 @@
 			regulator-always-on;
 			enable-active-high;
 			gpio = <&pmic 0 GPIO_ACTIVE_HIGH>;
+			vin-supply = <&vdd_ac_bat_reg>;
+			system-power-controller;
 		};
 
 		emmc_3v3_reg: regulator@3 {
@@ -740,7 +751,7 @@
 			regulator-min-microvolt = <5000000>;
 			regulator-max-microvolt = <5000000>;
 			enable-active-high;
-			gpio = <&gpio TEGRA_GPIO(DD, 4) GPIO_ACTIVE_HIGH>;
+			gpio = <&gpio TEGRA_GPIO(DD, 6) GPIO_ACTIVE_HIGH>;
 			gpio-open-drain;
 			vin-supply = <&vdd_5v0_reg>;
 			regulator-always-on;
@@ -753,7 +764,7 @@
 			regulator-min-microvolt = <5000000>;
 			regulator-max-microvolt = <5000000>;
 			enable-active-high;
-			gpio = <&gpio TEGRA_GPIO(DD, 6) GPIO_ACTIVE_HIGH>;
+			gpio = <&gpio TEGRA_GPIO(DD, 4) GPIO_ACTIVE_HIGH>;
 			gpio-open-drain;
 			vin-supply = <&vdd_5v0_reg>;
 		};
@@ -812,11 +823,10 @@
 			regulator-name = "vdd_smsc";
 			regulator-min-microvolt = <3300000>;
 			regulator-max-microvolt = <3300000>;
-			regulator-always-on;
 			enable-active-high;
 			gpio-open-drain;
 			gpio = <&gpio TEGRA_GPIO(DD, 5) GPIO_ACTIVE_HIGH>;
-		};
+		}; 
 	};
 
 	hda@70030000 {
@@ -834,4 +844,12 @@
 		compatible = "mmc-pwrseq-simple";
 		reset-gpios = <&gpio TEGRA_GPIO(D, 3) GPIO_ACTIVE_LOW>;
 	};
+	
+/*	reboot-mode {
+		mode-normal = <BOOT_NORMAL>;
+		mode-recovery = <BOOT_RECOVERY>;
+		mode-bootloader = <BOOT_FASTBOOT>;
+		mode-loader = <BOOT_BL_DOWNLOAD>;
+	};
+*/
 };
