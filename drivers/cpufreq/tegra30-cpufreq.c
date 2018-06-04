@@ -19,6 +19,7 @@
 #include <linux/cpufreq.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
+#include <linux/regulator/consumer.h>
 #include <linux/types.h>
 
 static struct cpufreq_frequency_table freq_table[] = {
@@ -43,6 +44,7 @@ struct tegra30_cpufreq {
 	struct clk *cpu_clk;
 	struct clk *pll_x_clk;
 	struct clk *pll_p_cclkg_clk;
+	struct regulator *vdd_cpu;
 	bool pll_x_prepared;
 };
 
@@ -122,6 +124,21 @@ static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
 		cpufreq->pll_x_prepared = false;
 	}
 
+	if (rate >= 1500000)
+		regulator_set_voltage(cpufreq->vdd_cpu, 1237000, 1237000);
+	else if (rate >= 1400000)
+		regulator_set_voltage(cpufreq->vdd_cpu, 1150000, 1150000);
+	else if (rate >= 1200000)
+		regulator_set_voltage(cpufreq->vdd_cpu, 1075000, 1075000);
+	else if (rate >= 1000000)
+		regulator_set_voltage(cpufreq->vdd_cpu, 1050000, 1050000);
+	else if (rate >= 800000)
+		regulator_set_voltage(cpufreq->vdd_cpu, 1025000, 1025000);
+	else if (rate >= 600000)
+		regulator_set_voltage(cpufreq->vdd_cpu, 1000000, 1000000);
+	else
+		regulator_set_voltage(cpufreq->vdd_cpu, 975000, 975000);
+
 	return ret;
 }
 
@@ -191,6 +208,12 @@ static int tegra30_cpufreq_probe(struct platform_device *pdev)
 		goto put_pll_x;
 	}
 
+	cpufreq->vdd_cpu = regulator_get(NULL, "vdd_cpu,vdd_sys");
+	if (IS_ERR(cpufreq->vdd_cpu)) {
+		pr_warn("Failed to get cpu regulator.");
+		return PTR_ERR(cpufreq->vdd_cpu);
+	}
+
 	cpufreq->dev = &pdev->dev;
 	cpufreq->driver.get = cpufreq_generic_get;
 	cpufreq->driver.attr = cpufreq_generic_attr;
@@ -230,6 +253,7 @@ static int tegra30_cpufreq_remove(struct platform_device *pdev)
 
 	cpufreq_unregister_driver(&cpufreq->driver);
 
+	regulator_put(cpufreq->vdd_cpu);
 	clk_put(cpufreq->pll_p_cclkg_clk);
 	clk_put(cpufreq->pll_x_clk);
 	clk_put(cpufreq->cpu_clk);

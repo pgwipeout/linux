@@ -101,6 +101,9 @@
 			status = "okay";
 			nvidia,hpd-gpio = <&gpio TEGRA_GPIO(N, 7) GPIO_ACTIVE_HIGH>;
 			nvidia,ddc-i2c-bus = <&hdmi_ddc>;
+			hdmi-supply = <&sys_3v3_reg>;
+			pll-supply = <&ldo7_reg>;
+			vdd-supply = <&vdd_vid_reg>;
 		};
 	};
 
@@ -223,8 +226,8 @@
 			regulators {
 				vdd1_reg: vdd1 {
 					regulator-name = "vddio_ddr_1v2";
-					regulator-min-microvolt = <1200000>;
-					regulator-max-microvolt = <1200000>;
+					regulator-min-microvolt = <1300000>;
+					regulator-max-microvolt = <1300000>;
 					regulator-always-on;
 				};
 
@@ -237,8 +240,8 @@
 
 				vddctrl_reg: vddctrl {
 					regulator-name = "vdd_cpu,vdd_sys";
-					regulator-min-microvolt = <1000000>;
-					regulator-max-microvolt = <1000000>;
+					regulator-min-microvolt = <950000>;
+					regulator-max-microvolt = <1350000>;
 					regulator-always-on;
 				};
 
