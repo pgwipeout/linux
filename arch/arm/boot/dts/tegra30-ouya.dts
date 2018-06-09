@@ -22,7 +22,9 @@
 
 	chosen {
 		stdout-path = "serial0:115200n8";
-		bootargs = "earlyprintk gpt gpt_sector=15073279 clk_ignore_unused panic=5 console=ttyS0,115200n8 root=/dev/sda1 ro rootwait drm.debug=0xe video=HDMI-A-1:1280x720@60";
+		bootargs = "earlyprintk gpt gpt_sector=15073279 clk_ignore_unused panic=5 console=ttyS0,115200n8 root=/dev/sda1 rootwait drm.debug=0xe video=HDMI-A-1:1280x720@60";
+		/*bootargs = "earlyprintk gpt gpt_sector=15073279 panic=5 console=ttyS0,115200n8 root=/dev/sda1 rootwait drm.debug=0xe video=HDMI-A-1:1280x720@60 trace_event=clk_enable,clk_disable,clk_set_parent,clk_set_rate,clk_set_rate_complete,clk_set_parent_complete tp_printk"; */
+
 	};
 
 	cpus {
@@ -34,27 +36,11 @@
 			compatible = "arm,cortex-a9";
 			reg = <0>;
 			next-level-cache = <&L2>;
-			operating-points = <
-			/* kHz    uV */
-/*			1700000  1350000 
-			1600000  1200000
-			1500000  1200000
-			1400000  1200000
-			1300000  1200000
-			1150000  1200000*/
-			1000000  1200000
-/*			910000  1200000
-			550000  950000
-*/			>;
 			clock-latency = <65536>; /* two CLK32 periods */
 			#cooling-cells = <2>;
 			cooling-min-level = <0>;
 			cooling-max-level = <2>;
 			assigned-clocks = <&tegra_car TEGRA30_CLK_CCLK_G>;
-			clocks = <&tegra_car TEGRA30_CLK_CCLK_G>,
-				 <&tegra_car TEGRA30_CLK_PLL_X>,
-				 <&tegra_car TEGRA30_CLK_PLL_P>;
-			clock-names = "cpu_g", "pll_x", "pll_p_cclkg";
 			vdd-cpu-supply = <&vddctrl_reg>;
 
 		};
@@ -137,11 +123,35 @@
 					      "sdmmc4_dat6_paa6",
 					      "sdmmc4_dat7_paa7",
 					      "sdmmc4_rst_n_pcc3";
-/*				nvidia,pull-down-strength = <1>; 
-				nvidia,pull-up-strength = <1>; 
-				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_FAST>;
-				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_FAST>;
-*/			};
+			};
+			drive_gma {
+				nvidia,pins = "drive_gma";
+				nvidia,pull-down-strength = <13>;
+				nvidia,pull-up-strength = <19>;
+				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
+				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
+			};
+			drive_gmb {
+				nvidia,pins = "drive_gmb";
+				nvidia,pull-down-strength = <13>;
+				nvidia,pull-up-strength = <19>;
+				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
+				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
+			};
+			drive_gmc {
+				nvidia,pins = "drive_gmc";
+				nvidia,pull-down-strength = <13>;
+				nvidia,pull-up-strength = <19>;
+				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
+				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
+			};
+			drive_gmd {
+				nvidia,pins = "drive_gmd";
+				nvidia,pull-down-strength = <13>;
+				nvidia,pull-up-strength = <19>;
+				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
+				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
+			};
 		};
 	};
 
@@ -159,7 +169,7 @@
 		
 		bluetooth {
 			compatible = "brcm,bcm43438-bt";
-			max-speed = <2000000>;
+/*			max-speed = <2000000>; */
 			shutdown-gpios = <&gpio TEGRA_GPIO(U, 0) GPIO_ACTIVE_HIGH>;
 			device-wakeup-gpios = <&gpio TEGRA_GPIO(U, 1) GPIO_ACTIVE_HIGH>;
 			host-wakeup-gpios = <&gpio TEGRA_GPIO(U, 6) GPIO_ACTIVE_LOW>;
@@ -277,7 +287,7 @@
 
 				ldo5_reg: ldo5 {
 					regulator-name = "vddio_sdmmc,avdd_vdac";
-					regulator-min-microvolt = <3300000>;
+					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <3300000>;
 					regulator-always-on;
 				};
@@ -477,8 +487,9 @@
 	sdhci@78000400 {
 		status = "okay";
 		non-removable;
-		max-frequency = <41000000>;
-		power-gpios = <&gpio TEGRA_GPIO(D, 4) GPIO_ACTIVE_HIGH>;
+/*		max-frequency = <41000000>; */
+		vmmc-supply = <&sdmmc_3v3_reg>;
+/*		power-gpios = <&gpio TEGRA_GPIO(D, 4) GPIO_ACTIVE_HIGH>; */
 		bus-width = <4>;
 		mmc-pwrseq = <&sdhci3_pwrseq>;
 		
@@ -488,12 +499,17 @@
 	};
 
 	sdhci@78000600 {
+		compatible = "nvidia,tegra30-sdhci";
 		status = "okay";
 		non-removable; 
 		keep-power-in-suspend;
-/*		mmc-ddr-1_8v;
-*/		mmc-hs200-1_8v;
-		max-frequency = <30000000>;
+/*		vmmc-supply = <&emmc_3v3_reg>; */
+/*		vqmmc-supply = <&vio_reg>; */
+/*		cap-mmc-hw-reset; */
+/*		sd-uhs-sdr50; */
+/*		mmc-ddr-1_8v; */
+		mmc-hs200-1_8v;
+		max-frequency = <34000000>;
 		bus-width = <8>;
 		pinctrl-0 = <&sdmmc4_default>;
 	};
@@ -504,7 +520,7 @@
 
 	usb-phy@7d000000 {
 		status = "okay";
-		dr_mode = "otg";
+		dr_mode = "peripheral";
 		vbus-supply = <&usb1_vbus_reg>;
 	};
 
@@ -576,9 +592,9 @@
 			enable-active-high;
 			gpio = <&gpio TEGRA_GPIO(BB, 4) GPIO_ACTIVE_HIGH>;
 			vin-supply = <&vio_reg>;
-			regulator-always-on;
+/*			regulator-always-on;
 			regulator-boot-on;
-		};
+*/		};
 
 		cp_5v_reg: regulator@2 {
 			compatible = "regulator-fixed";
@@ -603,7 +619,18 @@
 			regulator-always-on;
 			regulator-boot-on;
 			enable-active-high;
-			gpio = <&gpio TEGRA_GPIO(D, 1) GPIO_ACTIVE_HIGH>;
+			gpio = <&gpio TEGRA_GPIO(D, 1) GPIO_ACTIVE_HIGH>; 
+			vin-supply = <&sys_3v3_reg>;
+		};
+
+		sdmmc_3v3_reg: regulator@13 {
+			compatible = "regulator-fixed";
+			reg = <13>;
+			regulator-name = "sdmmc_3v3";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			enable-active-high;
+			gpio = <&gpio TEGRA_GPIO(D, 4) GPIO_ACTIVE_HIGH>;
 			vin-supply = <&sys_3v3_reg>;
 		};
 
@@ -615,9 +642,9 @@
 			regulator-max-microvolt = <3300000>;
 			enable-active-high;
 			gpio = <&gpio TEGRA_GPIO(D, 6) GPIO_ACTIVE_HIGH>;
-			regulator-always-on;
+/*			regulator-always-on;
 			regulator-boot-on;
-		};
+*/		};
 
 		pex_hvdd_3v3_reg: regulator@5 {
 			compatible = "regulator-fixed";
@@ -628,9 +655,9 @@
 			enable-active-high;
 			gpio = <&gpio TEGRA_GPIO(L, 7) GPIO_ACTIVE_HIGH>;
 			vin-supply = <&sys_3v3_reg>;
-			regulator-always-on;
+/*			regulator-always-on;
 			regulator-boot-on;
-		};
+*/		};
 
 		vdd_cam1_ldo_reg: regulator@6 {
 			compatible = "regulator-fixed";
@@ -667,9 +694,9 @@
 			enable-active-high;
 			gpio = <&gpio TEGRA_GPIO(S, 0) GPIO_ACTIVE_HIGH>;
 			vin-supply = <&sys_3v3_reg>;
-			regulator-always-on;
+/*			regulator-always-on;
 			regulator-boot-on;
-		};
+*/		};
 
 		vdd_com_reg: regulator@9 {
 			compatible = "regulator-fixed";
@@ -840,6 +867,8 @@
 		power {
 			gpios = <&gpio TEGRA_GPIO(V, 0) GPIO_ACTIVE_LOW>;
 			debounce-interval = <10>;
+			linux,code = <KEY_POWER>;
+			wakeup-source;
 		};
 	};
 

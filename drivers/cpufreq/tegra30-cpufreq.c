@@ -44,6 +44,7 @@ struct tegra30_cpufreq {
 	struct clk *cpu_clk;
 	struct clk *pll_x_clk;
 	struct clk *pll_p_cclkg_clk;
+	struct clk *clk_32k;
 	struct regulator *vdd_cpu;
 	bool pll_x_prepared;
 };
@@ -96,6 +97,7 @@ static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
 {
 	struct tegra30_cpufreq *cpufreq = cpufreq_get_driver_data();
 	unsigned long rate = freq_table[index].frequency;
+	unsigned long reg_volt = freq_table[index].frequency / 4 + 875000;
 	unsigned int ifreq = clk_get_rate(cpufreq->pll_p_cclkg_clk) / 1000;
 	int ret;
 
@@ -111,6 +113,15 @@ static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
 	if (ret)
 		dev_err(cpufreq->dev, "Failed to change pll_x to %lu\n", rate);
 
+	/* 
+	 * Set the regulator voltage based off the current frequency before switching
+	 * back to it.
+	 */
+
+	ret = regulator_set_voltage(cpufreq->vdd_cpu, reg_volt, reg_volt);
+	if (ret)
+		pr_err("Failed to change regulator to %lu\n", reg_volt);
+
 	ret = clk_set_parent(cpufreq->cpu_clk, cpufreq->pll_x_clk);
 	/* This shouldn't fail while changing or restoring */
 	WARN_ON(ret);
@@ -124,33 +135,22 @@ static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
 		cpufreq->pll_x_prepared = false;
 	}
 
-	if (rate >= 1500000)
-		regulator_set_voltage(cpufreq->vdd_cpu, 1237000, 1237000);
-	else if (rate >= 1400000)
-		regulator_set_voltage(cpufreq->vdd_cpu, 1150000, 1150000);
-	else if (rate >= 1200000)
-		regulator_set_voltage(cpufreq->vdd_cpu, 1075000, 1075000);
-	else if (rate >= 1000000)
-		regulator_set_voltage(cpufreq->vdd_cpu, 1050000, 1050000);
-	else if (rate >= 800000)
-		regulator_set_voltage(cpufreq->vdd_cpu, 1025000, 1025000);
-	else if (rate >= 600000)
-		regulator_set_voltage(cpufreq->vdd_cpu, 1000000, 1000000);
-	else
-		regulator_set_voltage(cpufreq->vdd_cpu, 975000, 975000);
-
-	return ret;
 }
 
 static int tegra_cpu_init(struct cpufreq_policy *policy)
 {
 	struct tegra30_cpufreq *cpufreq = cpufreq_get_driver_data();
+	unsigned int trans_time = clk_get_rate(cpufreq->clk_32k) * 2;
 	int ret;
 
 	clk_prepare_enable(cpufreq->cpu_clk);
 
-	/* FIXME: what's the actual transition time? */
-	ret = cpufreq_generic_init(policy, freq_table, 300 * 1000);
+	/* 
+	 * The transition time should be two clock periods of the main clock.
+	 * The main clock should be 32768, so we could hard code this to 65536.
+	 * But just in case, we grab the clock anyways. 
+	 */
+	ret = cpufreq_generic_init(policy, freq_table, trans_time);
 	if (ret) {
 		clk_disable_unprepare(cpufreq->cpu_clk);
 		return ret;
@@ -206,6 +206,12 @@ static int tegra30_cpufreq_probe(struct platform_device *pdev)
 	if (IS_ERR(cpufreq->pll_p_cclkg_clk)) {
 		err = PTR_ERR(cpufreq->pll_p_cclkg_clk);
 		goto put_pll_x;
+	}
+
+	cpufreq->vdd_cpu = regulator_get(NULL, "vdd_cpu,vdd_sys");
+	if (IS_ERR(cpufreq->vdd_cpu)) {
+		pr_warn("Failed to get cpu regulator.");
+		return PTR_ERR(cpufreq->vdd_cpu);
 	}
 
 	cpufreq->vdd_cpu = regulator_get(NULL, "vdd_cpu,vdd_sys");
@@ -274,3 +280,4 @@ MODULE_AUTHOR("Peter Geis <pgwipeout@gmail.com>");
 MODULE_ALIAS("platform:tegra30-cpufreq");
 MODULE_DESCRIPTION("NVIDIA Tegra30 cpufreq driver");
 MODULE_LICENSE("GPL");
+
