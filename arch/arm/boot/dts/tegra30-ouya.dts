@@ -22,7 +22,7 @@
 
 	chosen {
 		stdout-path = "serial0:115200n8";
-		bootargs = "earlyprintk gpt gpt_sector=15073279 clk_ignore_unused panic=5 console=ttyS0,115200n8 root=/dev/sda1 rootwait drm.debug=0xe video=HDMI-A-1:1280x720@60";
+		bootargs = "earlyprintk gpt gpt_sector=15073279 panic=10 console=ttyS0,115200n8 root=/dev/mmcblk0p9 rootwait drm.debug=0xe video=HDMI-A-1:1280x720@60";
 		/*bootargs = "earlyprintk gpt gpt_sector=15073279 panic=5 console=ttyS0,115200n8 root=/dev/sda1 rootwait drm.debug=0xe video=HDMI-A-1:1280x720@60 trace_event=clk_enable,clk_disable,clk_set_parent,clk_set_rate,clk_set_rate_complete,clk_set_parent_complete tp_printk"; */
 
 	};
@@ -155,21 +155,12 @@
 		};
 	};
 
-	serial@70006000 {
-		status = "disabled";
-	};
-
-	serial@70006040 {
-		status = "disabled";
-	};
-
 	serial@70006200 {
 		status = "okay";
 		compatible = "nvidia,tegra30-hsuart";
 		
 		bluetooth {
 			compatible = "brcm,bcm43438-bt";
-/*			max-speed = <2000000>; */
 			shutdown-gpios = <&gpio TEGRA_GPIO(U, 0) GPIO_ACTIVE_HIGH>;
 			device-wakeup-gpios = <&gpio TEGRA_GPIO(U, 1) GPIO_ACTIVE_HIGH>;
 			host-wakeup-gpios = <&gpio TEGRA_GPIO(U, 6) GPIO_ACTIVE_LOW>;
@@ -177,12 +168,7 @@
 	};
 
 	serial@70006300 {
-		/*compatible = "nvidia,tegra30-hsuart";*/
 		status = "okay";
-	};
-
-	serial@70006400 {
-		status = "disabled";
 	};
 
 	hdmi_ddc:i2c@7000c700 {
@@ -219,7 +205,6 @@
 			interrupt-controller;
 
 			ti,system-power-controller;
-			system-power-controller;
 
 			#gpio-cells = <2>;
 			gpio-controller;
@@ -476,18 +461,9 @@
 		};
 	};
 
-	sdhci@78000000 {
-		status = "disabled";
-	};
-
-	sdhci@78000200 {
-		status = "disabled";
-	};
-
 	sdhci@78000400 {
 		status = "okay";
 		non-removable;
-/*		max-frequency = <41000000>; */
 		vmmc-supply = <&sdmmc_3v3_reg>;
 /*		power-gpios = <&gpio TEGRA_GPIO(D, 4) GPIO_ACTIVE_HIGH>; */
 		bus-width = <4>;
@@ -503,11 +479,6 @@
 		status = "okay";
 		non-removable; 
 		keep-power-in-suspend;
-/*		vmmc-supply = <&emmc_3v3_reg>; */
-/*		vqmmc-supply = <&vio_reg>; */
-/*		cap-mmc-hw-reset; */
-/*		sd-uhs-sdr50; */
-/*		mmc-ddr-1_8v; */
 		mmc-hs200-1_8v;
 		max-frequency = <34000000>;
 		bus-width = <8>;

@@ -44,9 +44,10 @@ struct tegra30_cpufreq {
 	struct clk *cpu_clk;
 	struct clk *pll_x_clk;
 	struct clk *pll_p_cclkg_clk;
-	struct clk *clk_32k;
+	struct clk *clk_32k_clk;
 	struct regulator *vdd_cpu;
 	bool pll_x_prepared;
+	bool regulator_enabled;
 };
 
 static unsigned int tegra_get_intermediate(struct cpufreq_policy *policy,
@@ -93,11 +94,40 @@ static int tegra_target_intermediate(struct cpufreq_policy *policy,
 	return ret;
 }
 
+static int tegra_set_regulator_voltage(unsigned long rate)
+{
+	struct tegra30_cpufreq *cpufreq = cpufreq_get_driver_data();
+	int reg_volt;
+	int ret;
+
+	if (rate >= 1500000)
+		reg_volt = 1237000;
+	else if (rate >= 1400000)
+		reg_volt = 1150000;
+	else if (rate >= 1200000)
+		reg_volt = 1075000;
+	else if (rate >= 1000000)
+		reg_volt = 1050000;
+	else if (rate >= 800000)
+		reg_volt = 1025000;
+	else if (rate >= 600000)
+		reg_volt = 1000000;
+	else
+		reg_volt = 975000;
+
+	ret = regulator_set_voltage(cpufreq->vdd_cpu, reg_volt, reg_volt);
+	if (ret) {
+		pr_err("Failed to change regulator to %i, error %i\n", reg_volt, ret);
+		cpufreq->regulator_enabled = false;
+	};
+
+	return 0;
+}
+
 static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
 {
 	struct tegra30_cpufreq *cpufreq = cpufreq_get_driver_data();
 	unsigned long rate = freq_table[index].frequency;
-	unsigned long reg_volt = freq_table[index].frequency / 4 + 875000;
 	unsigned int ifreq = clk_get_rate(cpufreq->pll_p_cclkg_clk) / 1000;
 	int ret;
 
@@ -118,9 +148,8 @@ static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
 	 * back to it.
 	 */
 
-	ret = regulator_set_voltage(cpufreq->vdd_cpu, reg_volt, reg_volt);
-	if (ret)
-		pr_err("Failed to change regulator to %lu\n", reg_volt);
+	if (cpufreq->regulator_enabled)
+		tegra_set_regulator_voltage(rate);
 
 	ret = clk_set_parent(cpufreq->cpu_clk, cpufreq->pll_x_clk);
 	/* This shouldn't fail while changing or restoring */
@@ -135,12 +164,13 @@ static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
 		cpufreq->pll_x_prepared = false;
 	}
 
+	return 0;
 }
 
 static int tegra_cpu_init(struct cpufreq_policy *policy)
 {
 	struct tegra30_cpufreq *cpufreq = cpufreq_get_driver_data();
-	unsigned int trans_time = clk_get_rate(cpufreq->clk_32k) * 2;
+	unsigned int trans_time = clk_get_rate(cpufreq->clk_32k_clk) * 2;
 	int ret;
 
 	clk_prepare_enable(cpufreq->cpu_clk);
@@ -188,6 +218,8 @@ static int tegra30_cpufreq_probe(struct platform_device *pdev)
 	struct tegra30_cpufreq *cpufreq;
 	int err;
 
+
+
 	cpufreq = devm_kzalloc(&pdev->dev, sizeof(*cpufreq), GFP_KERNEL);
 	if (!cpufreq)
 		return -ENODEV;
@@ -208,17 +240,19 @@ static int tegra30_cpufreq_probe(struct platform_device *pdev)
 		goto put_pll_x;
 	}
 
-	cpufreq->vdd_cpu = regulator_get(NULL, "vdd_cpu,vdd_sys");
-	if (IS_ERR(cpufreq->vdd_cpu)) {
-		pr_warn("Failed to get cpu regulator.");
-		return PTR_ERR(cpufreq->vdd_cpu);
+	cpufreq->clk_32k_clk = clk_get_sys(NULL, "clk_32k");
+	if (IS_ERR(cpufreq->clk_32k_clk)) {
+		err = PTR_ERR(cpufreq->clk_32k_clk);
+		goto put_pll_p_cclkg;
 	}
 
 	cpufreq->vdd_cpu = regulator_get(NULL, "vdd_cpu,vdd_sys");
 	if (IS_ERR(cpufreq->vdd_cpu)) {
 		pr_warn("Failed to get cpu regulator.");
-		return PTR_ERR(cpufreq->vdd_cpu);
+		cpufreq->regulator_enabled = false;
 	}
+	else
+		cpufreq->regulator_enabled = true;
 
 	cpufreq->dev = &pdev->dev;
 	cpufreq->driver.get = cpufreq_generic_get;
@@ -236,12 +270,14 @@ static int tegra30_cpufreq_probe(struct platform_device *pdev)
 
 	err = cpufreq_register_driver(&cpufreq->driver);
 	if (err)
-		goto put_pll_p_cclkg;
+		goto put_clk_32k;
 
 	platform_set_drvdata(pdev, cpufreq);
 
 	return 0;
 
+put_clk_32k:
+	clk_put(cpufreq->clk_32k_clk);
 put_pll_p_cclkg:
 	clk_put(cpufreq->pll_p_cclkg_clk);
 put_pll_x:
