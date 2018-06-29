@@ -29,8 +29,6 @@
 
 #define PMC_SCRATCH41	0x140
 
-#define RESET_DATA(x)	((TEGRA_RESET_##x)*4)
-
 #ifdef CONFIG_PM_SLEEP
 /*
  *	tegra_resume
@@ -80,28 +78,6 @@ ENTRY(tegra_resume)
 #endif
 
 #ifdef CONFIG_CACHE_L2X0
-#ifdef CONFIG_TRUSTED_FOUNDATIONS
-	adr	r3, __tegra_cpu_reset_handler_data
-	ldr	r0, [r3, #RESET_DATA(TF_PRESENT)]
-	cmp	r0, #0
-	beq	ca9_scu_l2_resume
-
-	adr	r3, __tegra_smc_stack
-	stmia	r3, {r4-r12, sp, lr}
-
-	mov	r0, #3	// local wake
-	mov	r3, #0
-	mov	r4, #0
-	dsb
-	.arch_extension	sec
-	smc	#0
-
-	adr	r3, __tegra_smc_stack
-	ldmia	r3, {r4-r12, sp, pc}
-
-	b	end_ca9_scu_l2_resume
-ca9_scu_l2_resume:
-#endif
 	/* L2 cache resume & re-enable */
 	bl	l2c310_early_resume
 #endif
@@ -113,16 +89,6 @@ end_ca9_scu_l2_resume:
 	b	cpu_resume
 ENDPROC(tegra_resume)
 #endif
-
-#ifdef CONFIG_TRUSTED_FOUNDATIONS
-	.align L1_CACHE_SHIFT
-	.type __tegra_smc_stack, %object
-__tegra_smc_stack:
-	.rept 11
-	.long 0
-	.endr
-	.size __tegra_smc_stack, . - __tegra_smc_stack
-#endif /* CONFIG_TRUSTED_FOUNDATIONS */
 
 	.align L1_CACHE_SHIFT
 ENTRY(__tegra_cpu_reset_handler_start)
@@ -147,6 +113,7 @@ ENTRY(__tegra_cpu_reset_handler_start)
  *       must be position-independent.
  */
 
+	.arm
 	.align L1_CACHE_SHIFT
 ENTRY(__tegra_cpu_reset_handler)
 
@@ -154,8 +121,8 @@ ENTRY(__tegra_cpu_reset_handler)
 
 	tegra_get_soc_id TEGRA_APB_MISC_BASE, r6
 
-	adr	r5, __tegra_cpu_reset_handler_data
-	ldr	r0, [r5, #RESET_DATA(TF_PRESENT)]
+	adr	r12, __tegra_cpu_reset_handler_data
+	ldr	r0, [r12, #RESET_DATA(TF_PRESENT)]
 	cmp	r0, #0
 	bne	after_errata
 
@@ -193,7 +160,6 @@ after_errata:
 	and	r10, r10, #0x3			@ R10 = CPU number
 	mov	r11, #1
 	mov	r11, r11, lsl r10  		@ R11 = CPU mask
-	adr	r12, __tegra_cpu_reset_handler_data
 
 #ifdef CONFIG_SMP
 	/* Does the OS know about this CPU? */
@@ -207,10 +173,9 @@ after_errata:
 	cmp	r6, #TEGRA20
 	bne	1f
 	/* If not CPU0, don't let CPU0 reset CPU1 now that CPU1 is coming up. */
-	mov32	r5, TEGRA_IRAM_BASE + TEGRA_IRAM_RESET_HANDLER_OFFSET
 	mov	r0, #CPU_NOT_RESETTABLE
 	cmp	r10, #0
-	strneb	r0, [r5, #__tegra20_cpu1_resettable_status_offset]
+	strneb	r0, [r12, #RESET_DATA(RESETTABLE_STATUS)]
 1:
 #endif
 
@@ -315,18 +280,12 @@ ENDPROC(__tegra_cpu_reset_handler)
 	.align L1_CACHE_SHIFT
 	.type	__tegra_cpu_reset_handler_data, %object
 	.globl	__tegra_cpu_reset_handler_data
-__tegra_cpu_reset_handler_data:
-	.rept	TEGRA_RESET_DATA_SIZE
-	.long	0
-	.endr
-	.globl	__tegra20_cpu1_resettable_status_offset
-	.equ	__tegra20_cpu1_resettable_status_offset, \
+	.globl	__tegra_cpu_reset_handler_data_offset
+	.equ	__tegra_cpu_reset_handler_data_offset, \
 					. - __tegra_cpu_reset_handler_start
-	.byte	0
-	.align	4
-	.globl	__tegra_tf_present
-	.equ	__tegra_tf_present, . - __tegra_cpu_reset_handler_start
-	.long	0
+__tegra_cpu_reset_handler_data:
+	.rept   TEGRA_RESET_DATA_SIZE
+	.long   0
+	.endr
 	.align L1_CACHE_SHIFT
-
 ENTRY(__tegra_cpu_reset_handler_end)

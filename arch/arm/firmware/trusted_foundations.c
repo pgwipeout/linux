@@ -17,18 +17,15 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/of.h>
-#include <asm/io.h>
 #include <asm/firmware.h>
 #include <asm/outercache.h>
-#include <asm/hardware/cache-l2x0.h>
 #include <asm/trusted_foundations.h>
 
-#define TF_CACHE_MAINT           0xfffff100
-#define TF_SET_CPU_BOOT_ADDR_SMC 0xfffff200
+#define TF_CACHE_MAINT		0xfffff100
 
 #define TF_CACHE_INIT		1
-#define TF_CACHE_FLUSH		2
-#define TF_CACHE_REENABLE	4
+
+#define TF_SET_CPU_BOOT_ADDR_SMC 0xfffff200
 
 #define TF_CPU_PM		0xfffffffc
 #define TF_CPU_PM_S3		0xffffffe3
@@ -76,37 +73,20 @@ static int tf_prepare_idle(void)
 }
 
 #ifdef CONFIG_CACHE_L2X0
-static void tf_write_sec(unsigned long val, unsigned reg)
+static void tf_cache_write_sec(unsigned long val, unsigned int reg)
 {
-	unsigned long cur = readl_relaxed(l2x0_base + reg);
-
-	pr_warn("TF: ignoring write_sec[0x%x]: 0x%08lx -> 0x%08lx\n",
-		reg, cur, val);
-}
-
-static void tf_disable_cache(void)
-{
-	tf_generic_smc(TF_CACHE_MAINT, TF_CACHE_FLUSH, l2x0_way_mask);
-}
-
-static void tf_resume_cache(void)
-{
-	unsigned long aux_val = readl_relaxed(l2x0_base + L2X0_AUX_CTRL);
-	tf_generic_smc(TF_CACHE_MAINT, TF_CACHE_REENABLE, aux_val);
-}
-
-static void tf_configure_cache(const struct l2x0_regs *regs)
-{
-	outer_cache.disable = tf_disable_cache;
-	outer_cache.resume = tf_resume_cache;
+	/*
+	 * The L2X0 cache driver shouldn't invoke a write to a secure registers,
+	 * though it's better to reinsure by printing a warning message.
+	 */
+	pr_warn("%s: Ignoring write [0x%x]: 0x%08lx\n", __func__, reg, val);
 }
 
 static int tf_init_cache(void)
 {
+	outer_cache.write_sec = tf_cache_write_sec;
 	tf_generic_smc(TF_CACHE_MAINT, TF_CACHE_INIT, 0);
 
-	outer_cache.write_sec = tf_write_sec;
-	outer_cache.configure = tf_configure_cache;
 	return 0;
 }
 #endif /* CONFIG_CACHE_L2X0 */
@@ -147,6 +127,9 @@ void of_register_trusted_foundations(void)
 	if (err != 0)
 		panic("Trusted Foundation: missing version-minor property\n");
 	register_trusted_foundations(&pdata);
+}
 
-	of_node_put(node);
+bool trusted_foundations_registered(void)
+{
+	return firmware_ops == &trusted_foundations_ops;
 }
