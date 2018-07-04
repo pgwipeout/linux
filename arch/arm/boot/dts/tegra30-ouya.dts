@@ -126,29 +126,29 @@
 			};
 			drive_gma {
 				nvidia,pins = "drive_gma";
-				nvidia,pull-down-strength = <13>;
-				nvidia,pull-up-strength = <19>;
+				nvidia,pull-down-strength = <12>;
+				nvidia,pull-up-strength = <12>;
 				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
 				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
 			};
 			drive_gmb {
 				nvidia,pins = "drive_gmb";
-				nvidia,pull-down-strength = <13>;
-				nvidia,pull-up-strength = <19>;
+				nvidia,pull-down-strength = <12>;
+				nvidia,pull-up-strength = <12>;
 				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
 				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
 			};
 			drive_gmc {
 				nvidia,pins = "drive_gmc";
-				nvidia,pull-down-strength = <13>;
-				nvidia,pull-up-strength = <19>;
+				nvidia,pull-down-strength = <12>;
+				nvidia,pull-up-strength = <12>;
 				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
 				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
 			};
 			drive_gmd {
 				nvidia,pins = "drive_gmd";
-				nvidia,pull-down-strength = <13>;
-				nvidia,pull-up-strength = <19>;
+				nvidia,pull-down-strength = <12>;
+				nvidia,pull-up-strength = <12>;
 				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
 				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
 			};
@@ -480,13 +480,18 @@
 		non-removable; 
 		keep-power-in-suspend;
 		mmc-hs200-1_8v;
-		max-frequency = <34000000>;
+		max-frequency = <30000000>;
+/*		max-frequency = <34000000>; */
 		bus-width = <8>;
 		pinctrl-0 = <&sdmmc4_default>;
+		fixed-emmc-driver-type = <2>;
+		dsr = <0x0400>;
 	};
 
 	usb@7d000000 {
+		compatible = "nvidia,tegra20-udc"; 
 		status = "okay";
+		dr_mode = "peripheral";
 	};
 
 	usb-phy@7d000000 {

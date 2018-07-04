@@ -143,14 +143,6 @@ static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
 	if (ret)
 		dev_err(cpufreq->dev, "Failed to change pll_x to %lu\n", rate);
 
-	/* 
-	 * Set the regulator voltage based off the current frequency before switching
-	 * back to it.
-	 */
-
-	if (cpufreq->regulator_enabled)
-		tegra_set_regulator_voltage(rate);
-
 	ret = clk_set_parent(cpufreq->cpu_clk, cpufreq->pll_x_clk);
 	/* This shouldn't fail while changing or restoring */
 	WARN_ON(ret);
@@ -163,6 +155,13 @@ static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
 		clk_disable_unprepare(cpufreq->pll_x_clk);
 		cpufreq->pll_x_prepared = false;
 	}
+
+	/* 
+	 * Set the regulator voltage based off the current frequency.
+	 */
+
+	if (cpufreq->regulator_enabled)
+		tegra_set_regulator_voltage(rate);
 
 	return 0;
 }
