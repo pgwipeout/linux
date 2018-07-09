@@ -156,7 +156,7 @@ static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
 		cpufreq->pll_x_prepared = false;
 	}
 
-	/* 
+	/*
 	 * Set the regulator voltage based off the current frequency.
 	 */
 
@@ -174,10 +174,10 @@ static int tegra_cpu_init(struct cpufreq_policy *policy)
 
 	clk_prepare_enable(cpufreq->cpu_clk);
 
-	/* 
+	/*
 	 * The transition time should be two clock periods of the main clock.
 	 * The main clock should be 32768, so we could hard code this to 65536.
-	 * But just in case, we grab the clock anyways. 
+	 * But just in case, we grab the clock anyways.
 	 */
 	ret = cpufreq_generic_init(policy, freq_table, trans_time);
 	if (ret) {
@@ -224,7 +224,7 @@ static int tegra30_cpufreq_probe(struct platform_device *pdev)
 		return -ENODEV;
 
 	cpufreq->cpu_clk = clk_get_sys(NULL, "cclk_g");
-	if (IS_ERR(cpufreq->cpu_clk)) 
+	if (IS_ERR(cpufreq->cpu_clk))
 		return PTR_ERR(cpufreq->cpu_clk);
 
 	cpufreq->pll_x_clk = clk_get_sys(NULL, "pll_x");

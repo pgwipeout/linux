@@ -158,7 +158,7 @@
 	serial@70006200 {
 		status = "okay";
 		compatible = "nvidia,tegra30-hsuart";
-		
+
 		bluetooth {
 			compatible = "brcm,bcm43438-bt";
 			shutdown-gpios = <&gpio TEGRA_GPIO(U, 0) GPIO_ACTIVE_HIGH>;
@@ -468,7 +468,7 @@
 /*		power-gpios = <&gpio TEGRA_GPIO(D, 4) GPIO_ACTIVE_HIGH>; */
 		bus-width = <4>;
 		mmc-pwrseq = <&sdhci3_pwrseq>;
-		
+
 		brcmf: wifi@1 {
 			compatible = "brcm,bcm4329-fmac";
 		};
@@ -477,7 +477,7 @@
 	sdhci@78000600 {
 		compatible = "nvidia,tegra30-sdhci";
 		status = "okay";
-		non-removable; 
+		non-removable;
 		keep-power-in-suspend;
 		mmc-hs200-1_8v;
 		max-frequency = <30000000>;
@@ -489,7 +489,7 @@
 	};
 
 	usb@7d000000 {
-		compatible = "nvidia,tegra20-udc"; 
+		compatible = "nvidia,tegra20-udc";
 		status = "okay";
 		dr_mode = "peripheral";
 	};
@@ -512,7 +512,7 @@
 	};
 
 	usb-phy@7d004000 {
-		vbus-supply = <&vdd_smsc>; 
+		vbus-supply = <&vdd_smsc>;
 		nvidia,hssync-start-delay = <0>;
 		nvidia,xcvr-setup = <15>;
 		nvidia,xcvr-hsslew = <8>;
@@ -595,7 +595,7 @@
 			regulator-always-on;
 			regulator-boot-on;
 			enable-active-high;
-			gpio = <&gpio TEGRA_GPIO(D, 1) GPIO_ACTIVE_HIGH>; 
+			gpio = <&gpio TEGRA_GPIO(D, 1) GPIO_ACTIVE_HIGH>;
 			vin-supply = <&sys_3v3_reg>;
 		};
 
@@ -822,7 +822,7 @@
 			enable-active-high;
 			gpio = <&gpio TEGRA_GPIO(J, 2) GPIO_ACTIVE_HIGH>;
 		};
-		
+
 		vdd_smsc: regulator@108 {
 			compatible = "regulator-fixed";
 			reg = <108>;
@@ -832,7 +832,7 @@
 			enable-active-high;
 			gpio-open-drain;
 			gpio = <&gpio TEGRA_GPIO(DD, 5) GPIO_ACTIVE_HIGH>;
-		}; 
+		};
 	};
 
 	hda@70030000 {
@@ -852,7 +852,7 @@
 		compatible = "mmc-pwrseq-simple";
 		reset-gpios = <&gpio TEGRA_GPIO(D, 3) GPIO_ACTIVE_LOW>;
 	};
-	
+
 /*	reboot-mode {
 		mode-normal = <BOOT_NORMAL>;
 		mode-recovery = <BOOT_RECOVERY>;
