@@ -29,6 +29,7 @@
 
 #define PMU_NR_COUNTERS 2
 
+static void __iomem *l2x0_base;
 static struct pmu *l2x0_pmu;
 static cpumask_t pmu_cpu;
 
