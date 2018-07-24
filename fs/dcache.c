@@ -895,6 +895,9 @@ repeat:
 		rcu_read_unlock();
 		goto repeat;
 	}
+	if (WARN_ON(!ret->d_lockref.count))
+		printk(KERN_ERR "child: %px[%ld], parent: %px:%px\n",
+			dentry, (long)dentry->d_lockref.count, dentry->d_parent, ret);
 	rcu_read_unlock();
 	BUG_ON(!ret->d_lockref.count);
 	ret->d_lockref.count++;
