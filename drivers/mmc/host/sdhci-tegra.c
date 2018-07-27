@@ -16,11 +16,13 @@
 #include <linux/err.h>
 #include <linux/module.h>
 #include <linux/init.h>
+#include <linux/iopoll.h>
 #include <linux/platform_device.h>
 #include <linux/clk.h>
 #include <linux/io.h>
 #include <linux/of.h>
 #include <linux/of_device.h>
+#include <linux/pinctrl/consumer.h>
 #include <linux/reset.h>
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
@@ -38,27 +40,53 @@
 #define SDHCI_CLOCK_CTRL_PADPIPE_CLKEN_OVERRIDE		BIT(3)
 #define SDHCI_CLOCK_CTRL_SPI_MODE_CLKEN_OVERRIDE	BIT(2)
 
-#define SDHCI_TEGRA_VENDOR_MISC_CTRL		0x120
-#define SDHCI_MISC_CTRL_ENABLE_SDR104		0x8
-#define SDHCI_MISC_CTRL_ENABLE_SDR50		0x10
-#define SDHCI_MISC_CTRL_ENABLE_SDHCI_SPEC_300	0x20
-#define SDHCI_MISC_CTRL_ENABLE_DDR50		0x200
+#define SDHCI_TEGRA_VENDOR_MISC_CTRL			0x120
+#define SDHCI_MISC_CTRL_ENABLE_SDR104			0x8
+#define SDHCI_MISC_CTRL_ENABLE_SDR50			0x10
+#define SDHCI_MISC_CTRL_ENABLE_SDHCI_SPEC_300		0x20
+#define SDHCI_MISC_CTRL_ENABLE_DDR50			0x200
 
-#define SDHCI_TEGRA_AUTO_CAL_CONFIG		0x1e4
-#define SDHCI_AUTO_CAL_START			BIT(31)
-#define SDHCI_AUTO_CAL_ENABLE			BIT(29)
+#define SDHCI_TEGRA_AUTO_CAL_CONFIG			0x1e4
+#define SDHCI_AUTO_CAL_START				BIT(31)
+#define SDHCI_AUTO_CAL_ENABLE				BIT(29)
+#define SDHCI_AUTO_CAL_PDPU_OFFSET_MASK			0x0000ffff
 
-#define NVQUIRK_FORCE_SDHCI_SPEC_200	BIT(0)
-#define NVQUIRK_ENABLE_BLOCK_GAP_DET	BIT(1)
-#define NVQUIRK_ENABLE_SDHCI_SPEC_300	BIT(2)
-#define NVQUIRK_ENABLE_SDR50		BIT(3)
-#define NVQUIRK_ENABLE_SDR104		BIT(4)
-#define NVQUIRK_ENABLE_DDR50		BIT(5)
-#define NVQUIRK_HAS_PADCALIB		BIT(6)
+#define SDHCI_TEGRA_SDMEM_COMP_PADCTRL			0x1e0
+#define SDHCI_TEGRA_SDMEM_COMP_PADCTRL_VREF_SEL_MASK	0x0000000f
+#define SDHCI_TEGRA_SDMEM_COMP_PADCTRL_VREF_SEL_VAL	0x7
+#define SDHCI_TEGRA_SDMEM_COMP_PADCTRL_E_INPUT_E_PWRD	BIT(31)
+
+#define SDHCI_TEGRA_AUTO_CAL_STATUS			0x1ec
+#define SDHCI_TEGRA_AUTO_CAL_ACTIVE			BIT(31)
+
+#define NVQUIRK_FORCE_SDHCI_SPEC_200			BIT(0)
+#define NVQUIRK_ENABLE_BLOCK_GAP_DET			BIT(1)
+#define NVQUIRK_ENABLE_SDHCI_SPEC_300			BIT(2)
+#define NVQUIRK_ENABLE_SDR50				BIT(3)
+#define NVQUIRK_ENABLE_SDR104				BIT(4)
+#define NVQUIRK_ENABLE_DDR50				BIT(5)
+#define NVQUIRK_HAS_PADCALIB				BIT(6)
+#define NVQUIRK_NEEDS_PAD_CONTROL			BIT(7)
 
 struct sdhci_tegra_soc_data {
 	const struct sdhci_pltfm_data *pdata;
 	u32 nvquirks;
+};
+
+/* Magic pull up and pull down pad calibration offsets */
+struct sdhci_tegra_autocal_offsets {
+	u32 pull_up_3v3;
+	u32 pull_down_3v3;
+	u32 pull_up_3v3_timeout;
+	u32 pull_down_3v3_timeout;
+	u32 pull_up_1v8;
+	u32 pull_down_1v8;
+	u32 pull_up_1v8_timeout;
+	u32 pull_down_1v8_timeout;
+	u32 pull_up_sdr104;
+	u32 pull_down_sdr104;
+	u32 pull_up_hs400;
+	u32 pull_down_hs400;
 };
 
 struct sdhci_tegra {
@@ -66,8 +94,15 @@ struct sdhci_tegra {
 	struct gpio_desc *power_gpio;
 	bool ddr_signaling;
 	bool pad_calib_required;
+	bool pad_control_available;
+	bool only_1v8;
 
 	struct reset_control *rst;
+	struct pinctrl *pinctrl_sdmmc;
+	struct pinctrl_state *pinctrl_state_3v3;
+	struct pinctrl_state *pinctrl_state_1v8;
+
+	struct sdhci_tegra_autocal_offsets autocal_offsets;
 };
 
 static u16 tegra_sdhci_readw(struct sdhci_host *host, int reg)
@@ -138,12 +173,47 @@ static unsigned int tegra_sdhci_get_ro(struct sdhci_host *host)
 	return mmc_gpio_get_ro(host->mmc);
 }
 
+static bool tegra_sdhci_is_uhs_valid(struct sdhci_host *host)
+{
+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+	struct sdhci_tegra *tegra_host = sdhci_pltfm_priv(pltfm_host);
+	const struct sdhci_tegra_soc_data *soc_data = tegra_host->soc_data;
+
+	/*
+	 * The 1.8 V only host controllers don't need to have configurable
+	 * regulators and pad voltages. In this case the UHS modes can be
+	 * enabled regardless.
+	 */
+	if (tegra_host->only_1v8)
+		return true;
+
+	/*
+	 * If the board does not define a regulator for the SDHCI IO voltage,
+	 * then don't advertise support for UHS modes even if the device
+	 * supports it because the IO voltage cannot be configured.
+	 */
+	if (IS_ERR(host->mmc->supply.vqmmc))
+		return false;
+
+	/*
+	 * Later SoC generations require software pad voltage configuration.
+	 * The UHS modes should only be enabled if the pad configuration states
+	 * are available on platforms where they are required in order to switch
+	 * the signaling voltage.
+	 */
+	if (soc_data->nvquirks & NVQUIRK_NEEDS_PAD_CONTROL)
+		return tegra_host->pad_control_available;
+
+	return false;
+}
+
 static void tegra_sdhci_reset(struct sdhci_host *host, u8 mask)
 {
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
 	struct sdhci_tegra *tegra_host = sdhci_pltfm_priv(pltfm_host);
 	const struct sdhci_tegra_soc_data *soc_data = tegra_host->soc_data;
-	u32 misc_ctrl, clk_ctrl;
+	u32 misc_ctrl, clk_ctrl, pad_ctrl;
+	bool uhs_valid;
 
 	sdhci_reset(host, mask);
 
@@ -160,13 +230,8 @@ static void tegra_sdhci_reset(struct sdhci_host *host, u8 mask)
 
 	clk_ctrl &= ~SDHCI_CLOCK_CTRL_SPI_MODE_CLKEN_OVERRIDE;
 
-	/*
-	 * If the board does not define a regulator for the SDHCI
-	 * IO voltage, then don't advertise support for UHS modes
-	 * even if the device supports it because the IO voltage
-	 * cannot be configured.
-	 */
-	if (!IS_ERR(host->mmc->supply.vqmmc)) {
+	uhs_valid = tegra_sdhci_is_uhs_valid(host);
+	if (uhs_valid) {
 		/* Erratum: Enable SDHCI spec v3.00 support */
 		if (soc_data->nvquirks & NVQUIRK_ENABLE_SDHCI_SPEC_300)
 			misc_ctrl |= SDHCI_MISC_CTRL_ENABLE_SDHCI_SPEC_300;
@@ -184,21 +249,210 @@ static void tegra_sdhci_reset(struct sdhci_host *host, u8 mask)
 	sdhci_writel(host, misc_ctrl, SDHCI_TEGRA_VENDOR_MISC_CTRL);
 	sdhci_writel(host, clk_ctrl, SDHCI_TEGRA_VENDOR_CLOCK_CTRL);
 
-	if (soc_data->nvquirks & NVQUIRK_HAS_PADCALIB)
+	if (soc_data->nvquirks & NVQUIRK_HAS_PADCALIB) {
+		pad_ctrl = sdhci_readl(host, SDHCI_TEGRA_SDMEM_COMP_PADCTRL);
+		pad_ctrl &= ~SDHCI_TEGRA_SDMEM_COMP_PADCTRL_VREF_SEL_MASK;
+		pad_ctrl |= SDHCI_TEGRA_SDMEM_COMP_PADCTRL_VREF_SEL_VAL;
+		sdhci_writel(host, pad_ctrl, SDHCI_TEGRA_SDMEM_COMP_PADCTRL);
+
 		tegra_host->pad_calib_required = true;
+	}
 
 	tegra_host->ddr_signaling = false;
 }
 
+static void tegra_sdhci_configure_cal_pad(struct sdhci_host *host, bool enable)
+{
+	u32 reg;
+
+	/*
+	 * Enable or disable the additional I/O pad used by the drive strength
+	 * calibration process.
+	 */
+	reg = sdhci_readl(host, SDHCI_TEGRA_SDMEM_COMP_PADCTRL);
+	if (enable)
+		reg |= SDHCI_TEGRA_SDMEM_COMP_PADCTRL_E_INPUT_E_PWRD;
+	else
+		reg &= ~SDHCI_TEGRA_SDMEM_COMP_PADCTRL_E_INPUT_E_PWRD;
+	sdhci_writel(host, reg, SDHCI_TEGRA_SDMEM_COMP_PADCTRL);
+	udelay(1);
+}
+
+static bool tegra_sdhci_configure_card_clk(struct sdhci_host *host, bool enable)
+{
+	bool orig_enabled;
+	u32 reg;
+
+	reg = sdhci_readw(host, SDHCI_CLOCK_CONTROL);
+	orig_enabled = !!(reg & SDHCI_CLOCK_CARD_EN);
+
+	if (orig_enabled == enable)
+		return orig_enabled;
+
+	if (enable)
+		reg |= SDHCI_CLOCK_CARD_EN;
+	else
+		reg &= ~SDHCI_CLOCK_CARD_EN;
+
+	sdhci_writew(host, reg, SDHCI_CLOCK_CONTROL);
+
+	return orig_enabled;
+}
+
+static void tegra_sdhci_set_pad_autocal_offset(struct sdhci_host *host,
+					       u16 pdpu)
+{
+	u32 reg;
+
+	reg = sdhci_readl(host, SDHCI_TEGRA_AUTO_CAL_CONFIG);
+	reg &= ~SDHCI_AUTO_CAL_PDPU_OFFSET_MASK;
+	reg |= pdpu;
+	sdhci_writel(host, reg, SDHCI_TEGRA_AUTO_CAL_CONFIG);
+}
+
 static void tegra_sdhci_pad_autocalib(struct sdhci_host *host)
 {
-	u32 val;
+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+	struct sdhci_tegra *tegra_host = sdhci_pltfm_priv(pltfm_host);
+	struct sdhci_tegra_autocal_offsets offsets =
+			tegra_host->autocal_offsets;
+	struct mmc_ios *ios = &host->mmc->ios;
+	bool card_clk_enabled;
+	u16 pdpu;
+	u32 reg;
+	int ret;
 
-	mdelay(1);
+	switch (ios->timing) {
+	case MMC_TIMING_UHS_SDR104:
+		pdpu = offsets.pull_down_sdr104 << 8 | offsets.pull_up_sdr104;
+		break;
+	case MMC_TIMING_MMC_HS400:
+		pdpu = offsets.pull_down_hs400 << 8 | offsets.pull_up_hs400;
+		break;
+	default:
+		if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_180)
+			pdpu = offsets.pull_down_1v8 << 8 | offsets.pull_up_1v8;
+		else
+			pdpu = offsets.pull_down_3v3 << 8 | offsets.pull_up_3v3;
+	}
 
-	val = sdhci_readl(host, SDHCI_TEGRA_AUTO_CAL_CONFIG);
-	val |= SDHCI_AUTO_CAL_ENABLE | SDHCI_AUTO_CAL_START;
-	sdhci_writel(host,val, SDHCI_TEGRA_AUTO_CAL_CONFIG);
+	tegra_sdhci_set_pad_autocal_offset(host, pdpu);
+
+	card_clk_enabled = tegra_sdhci_configure_card_clk(host, false);
+
+	tegra_sdhci_configure_cal_pad(host, true);
+
+	reg = sdhci_readl(host, SDHCI_TEGRA_AUTO_CAL_CONFIG);
+	reg |= SDHCI_AUTO_CAL_ENABLE | SDHCI_AUTO_CAL_START;
+	sdhci_writel(host, reg, SDHCI_TEGRA_AUTO_CAL_CONFIG);
+
+	/* 10 ms timeout */
+	ret = readl_poll_timeout(host->ioaddr + SDHCI_TEGRA_AUTO_CAL_STATUS,
+				 reg, !(reg & SDHCI_TEGRA_AUTO_CAL_ACTIVE),
+				 1, 10000);
+
+	tegra_sdhci_configure_cal_pad(host, false);
+
+	tegra_sdhci_configure_card_clk(host, card_clk_enabled);
+
+	if (ret) {
+		dev_err(mmc_dev(host->mmc), "Pad autocal timed out\n");
+
+		if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_180)
+			pdpu = offsets.pull_down_1v8_timeout << 8 |
+			       offsets.pull_up_1v8_timeout;
+		else
+			pdpu = offsets.pull_down_3v3_timeout << 8 |
+			       offsets.pull_up_3v3_timeout;
+
+		/* Disable automatic calibration and use fixed offsets */
+		reg = sdhci_readl(host, SDHCI_TEGRA_AUTO_CAL_CONFIG);
+		reg &= ~SDHCI_AUTO_CAL_ENABLE;
+		sdhci_writel(host, reg, SDHCI_TEGRA_AUTO_CAL_CONFIG);
+
+		tegra_sdhci_set_pad_autocal_offset(host, pdpu);
+	}
+}
+
+static void tegra_sdhci_parse_pad_autocal_dt(struct sdhci_host *host)
+{
+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+	struct sdhci_tegra *tegra_host = sdhci_pltfm_priv(pltfm_host);
+	struct sdhci_tegra_autocal_offsets *autocal =
+			&tegra_host->autocal_offsets;
+	int err;
+
+	err = device_property_read_u32(host->mmc->parent,
+			"nvidia,pad-autocal-pull-up-offset-3v3",
+			&autocal->pull_up_3v3);
+	if (err)
+		autocal->pull_up_3v3 = 0;
+
+	err = device_property_read_u32(host->mmc->parent,
+			"nvidia,pad-autocal-pull-down-offset-3v3",
+			&autocal->pull_down_3v3);
+	if (err)
+		autocal->pull_down_3v3 = 0;
+
+	err = device_property_read_u32(host->mmc->parent,
+			"nvidia,pad-autocal-pull-up-offset-1v8",
+			&autocal->pull_up_1v8);
+	if (err)
+		autocal->pull_up_1v8 = 0;
+
+	err = device_property_read_u32(host->mmc->parent,
+			"nvidia,pad-autocal-pull-down-offset-1v8",
+			&autocal->pull_down_1v8);
+	if (err)
+		autocal->pull_down_1v8 = 0;
+
+	err = device_property_read_u32(host->mmc->parent,
+			"nvidia,pad-autocal-pull-up-offset-3v3-timeout",
+			&autocal->pull_up_3v3);
+	if (err)
+		autocal->pull_up_3v3_timeout = 0;
+
+	err = device_property_read_u32(host->mmc->parent,
+			"nvidia,pad-autocal-pull-down-offset-3v3-timeout",
+			&autocal->pull_down_3v3);
+	if (err)
+		autocal->pull_down_3v3_timeout = 0;
+
+	err = device_property_read_u32(host->mmc->parent,
+			"nvidia,pad-autocal-pull-up-offset-1v8-timeout",
+			&autocal->pull_up_1v8);
+	if (err)
+		autocal->pull_up_1v8_timeout = 0;
+
+	err = device_property_read_u32(host->mmc->parent,
+			"nvidia,pad-autocal-pull-down-offset-1v8-timeout",
+			&autocal->pull_down_1v8);
+	if (err)
+		autocal->pull_down_1v8_timeout = 0;
+
+	err = device_property_read_u32(host->mmc->parent,
+			"nvidia,pad-autocal-pull-up-offset-sdr104",
+			&autocal->pull_up_sdr104);
+	if (err)
+		autocal->pull_up_sdr104 = autocal->pull_up_1v8;
+
+	err = device_property_read_u32(host->mmc->parent,
+			"nvidia,pad-autocal-pull-down-offset-sdr104",
+			&autocal->pull_down_sdr104);
+	if (err)
+		autocal->pull_down_sdr104 = autocal->pull_down_1v8;
+
+	err = device_property_read_u32(host->mmc->parent,
+			"nvidia,pad-autocal-pull-up-offset-hs400",
+			&autocal->pull_up_hs400);
+	if (err)
+		autocal->pull_up_hs400 = autocal->pull_up_1v8;
+
+	err = device_property_read_u32(host->mmc->parent,
+			"nvidia,pad-autocal-pull-down-offset-hs400",
+			&autocal->pull_down_hs400);
+	if (err)
+		autocal->pull_down_hs400 = autocal->pull_down_1v8;
 }
 
 static void tegra_sdhci_set_clock(struct sdhci_host *host, unsigned int clock)
@@ -286,14 +540,85 @@ static int tegra_sdhci_execute_tuning(struct sdhci_host *host, u32 opcode)
 	return mmc_send_tuning(host->mmc, opcode, NULL);
 }
 
-static void tegra_sdhci_voltage_switch(struct sdhci_host *host)
+static int tegra_sdhci_set_padctrl(struct sdhci_host *host, int voltage)
 {
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
 	struct sdhci_tegra *tegra_host = sdhci_pltfm_priv(pltfm_host);
-	const struct sdhci_tegra_soc_data *soc_data = tegra_host->soc_data;
+	int ret;
 
-	if (soc_data->nvquirks & NVQUIRK_HAS_PADCALIB)
-		tegra_host->pad_calib_required = true;
+	if (!tegra_host->pad_control_available)
+		return 0;
+
+	if (voltage == MMC_SIGNAL_VOLTAGE_180) {
+		ret = pinctrl_select_state(tegra_host->pinctrl_sdmmc,
+					   tegra_host->pinctrl_state_1v8);
+		if (ret < 0)
+			dev_err(mmc_dev(host->mmc),
+				"setting 1.8V failed, ret: %d\n", ret);
+	} else {
+		ret = pinctrl_select_state(tegra_host->pinctrl_sdmmc,
+					   tegra_host->pinctrl_state_3v3);
+		if (ret < 0)
+			dev_err(mmc_dev(host->mmc),
+				"setting 3.3V failed, ret: %d\n", ret);
+	}
+
+	return ret;
+}
+
+static int sdhci_tegra_start_signal_voltage_switch(struct mmc_host *mmc,
+						   struct mmc_ios *ios)
+{
+	struct sdhci_host *host = mmc_priv(mmc);
+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+	struct sdhci_tegra *tegra_host = sdhci_pltfm_priv(pltfm_host);
+	int ret = 0;
+
+	if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_330) {
+		ret = tegra_sdhci_set_padctrl(host, ios->signal_voltage);
+		if (ret < 0)
+			return ret;
+		ret = sdhci_start_signal_voltage_switch(mmc, ios);
+	} else if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_180) {
+		ret = sdhci_start_signal_voltage_switch(mmc, ios);
+		if (ret < 0)
+			return ret;
+		ret = tegra_sdhci_set_padctrl(host, ios->signal_voltage);
+	}
+
+	if (tegra_host->pad_calib_required)
+		tegra_sdhci_pad_autocalib(host);
+
+	return ret;
+}
+
+static void tegra_sdhci_init_pinctrl_info(struct device *dev,
+					  struct sdhci_tegra *tegra_host)
+{
+	tegra_host->pinctrl_sdmmc = devm_pinctrl_get(dev);
+	if (IS_ERR(tegra_host->pinctrl_sdmmc)) {
+		dev_dbg(dev, "No pinctrl info, err: %ld\n",
+			PTR_ERR(tegra_host->pinctrl_sdmmc));
+		return;
+	}
+
+	tegra_host->pinctrl_state_3v3 =
+		pinctrl_lookup_state(tegra_host->pinctrl_sdmmc, "sdmmc-3v3");
+	if (IS_ERR(tegra_host->pinctrl_state_3v3)) {
+		dev_err(dev, "Missing 3.3V pad state, err: %ld\n",
+			PTR_ERR(tegra_host->pinctrl_state_3v3));
+		return;
+	}
+
+	tegra_host->pinctrl_state_1v8 =
+		pinctrl_lookup_state(tegra_host->pinctrl_sdmmc, "sdmmc-1v8");
+	if (IS_ERR(tegra_host->pinctrl_state_1v8)) {
+		dev_err(dev, "Missing 1.8V pad state, err: %ld\n",
+			  PTR_ERR(tegra_host->pinctrl_state_3v3));
+		return;
+	}
+
+	tegra_host->pad_control_available = true;
 }
 
 static const struct sdhci_ops tegra_sdhci_ops = {
@@ -305,7 +630,6 @@ static const struct sdhci_ops tegra_sdhci_ops = {
 	.reset      = tegra_sdhci_reset,
 	.platform_execute_tuning = tegra_sdhci_execute_tuning,
 	.set_uhs_signaling = tegra_sdhci_set_uhs_signaling,
-	.voltage_switch = tegra_sdhci_voltage_switch,
 	.get_max_clock = tegra_sdhci_get_max_clock,
 };
 
@@ -362,7 +686,6 @@ static const struct sdhci_ops tegra114_sdhci_ops = {
 	.reset      = tegra_sdhci_reset,
 	.platform_execute_tuning = tegra_sdhci_execute_tuning,
 	.set_uhs_signaling = tegra_sdhci_set_uhs_signaling,
-	.voltage_switch = tegra_sdhci_voltage_switch,
 	.get_max_clock = tegra_sdhci_get_max_clock,
 };
 
@@ -419,6 +742,8 @@ static const struct sdhci_pltfm_data sdhci_tegra210_pdata = {
 
 static const struct sdhci_tegra_soc_data soc_data_tegra210 = {
 	.pdata = &sdhci_tegra210_pdata,
+	.nvquirks = NVQUIRK_NEEDS_PAD_CONTROL |
+		    NVQUIRK_HAS_PADCALIB,
 };
 
 static const struct sdhci_pltfm_data sdhci_tegra186_pdata = {
@@ -442,6 +767,8 @@ static const struct sdhci_pltfm_data sdhci_tegra186_pdata = {
 
 static const struct sdhci_tegra_soc_data soc_data_tegra186 = {
 	.pdata = &sdhci_tegra186_pdata,
+	.nvquirks = NVQUIRK_NEEDS_PAD_CONTROL |
+		    NVQUIRK_HAS_PADCALIB,
 };
 
 static const struct of_device_id sdhci_tegra_dt_match[] = {
@@ -478,14 +805,27 @@ static int sdhci_tegra_probe(struct platform_device *pdev)
 	tegra_host = sdhci_pltfm_priv(pltfm_host);
 	tegra_host->ddr_signaling = false;
 	tegra_host->pad_calib_required = false;
+	tegra_host->pad_control_available = false;
+	tegra_host->only_1v8 = false;
 	tegra_host->soc_data = soc_data;
+
+	if (soc_data->nvquirks & NVQUIRK_NEEDS_PAD_CONTROL) {
+		host->mmc_host_ops.start_signal_voltage_switch =
+			sdhci_tegra_start_signal_voltage_switch;
+		tegra_sdhci_init_pinctrl_info(&pdev->dev, tegra_host);
+	}
 
 	rc = mmc_of_parse(host->mmc);
 	if (rc)
 		goto err_parse_dt;
 
+	if (of_get_property(pdev->dev.of_node, "nvidia,only-1-8-v", NULL))
+		tegra_host->only_1v8 = true;
+
 	if (tegra_host->soc_data->nvquirks & NVQUIRK_ENABLE_DDR50)
 		host->mmc->caps |= MMC_CAP_1_8V_DDR;
+
+	tegra_sdhci_parse_pad_autocal_dt(host);
 
 	tegra_host->power_gpio = devm_gpiod_get_optional(&pdev->dev, "power",
 							 GPIOD_OUT_HIGH);
