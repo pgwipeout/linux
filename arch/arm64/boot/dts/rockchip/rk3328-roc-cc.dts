@@ -308,6 +308,12 @@
 			rockchip,pins = <1 RK_PD2 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
+
+	usb3 {
+		usb30_host_drv: usb30-host-drv {
+			rockchip,pins = <0 RK_PA0 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
 };
 
 &sdmmc {
@@ -341,6 +347,7 @@
 
 &u2phy_otg {
 	status = "okay";
+	dr_mode = "host";
 };
 
 &uart2 {
