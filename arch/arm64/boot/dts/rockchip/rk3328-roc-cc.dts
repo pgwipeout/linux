@@ -14,6 +14,32 @@
 		stdout-path = "serial2:1500000n8";
 	};
 
+	sound {
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,mclk-fs = <256>;
+		simple-audio-card,name = "rockchip,rk3328";
+		simple-audio-card,cpu {
+			sound-dai = <&i2s1>;
+		};
+		simple-audio-card,codec {
+			sound-dai = <&codec>;
+		};
+	};
+
+	hdmi-sound {
+		compatible = "simple-audio-card";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,mclk-fs = <128>;
+		simple-audio-card,name = "rockchip,hdmi";
+		simple-audio-card,cpu {
+			sound-dai = <&i2s0>;
+		};
+		simple-audio-card,codec {
+			sound-dai = <&hdmi>;
+		};
+	};
+
 	gmac_clkin: external-gmac-clock {
 		compatible = "fixed-clock";
 		clock-frequency = <125000000>;
@@ -102,6 +128,11 @@
 			mode = <0x05>;
 		};
 	};
+};
+
+&codec {
+	#sound-dai-cells = <0>;
+	status = "okay";
 };
 
 &cpu0 {
@@ -282,6 +313,17 @@
 			};
 		};
 	};
+};
+
+&i2s0 {
+	#sound-dai-cells = <0>;
+	rockchip,bclk-fs = <128>;
+	status = "okay";
+};
+
+&i2s1 {
+	#sound-dai-cells = <0>;
+	status = "okay";
 };
 
 &io_domains {
