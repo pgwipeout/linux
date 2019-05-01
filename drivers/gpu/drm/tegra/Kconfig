@@ -11,6 +11,7 @@ config DRM_TEGRA
 	select TEGRA_HOST1X
 	select IOMMU_IOVA
 	select CEC_CORE if CEC_NOTIFIER
+	select INTERCONNECT_TEGRA if INTERCONNECT
 	help
 	  Choose this option if you have an NVIDIA Tegra SoC.
 
