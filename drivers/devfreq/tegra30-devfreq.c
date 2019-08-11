@@ -430,7 +430,7 @@ static unsigned long actmon_update_target(struct tegra_devfreq *tegra,
 	target_freq = dev->avg_count / ACTMON_SAMPLING_PERIOD + dev->boost_freq;
 	target_freq = tegra_actmon_account_cpu_freq(tegra, dev, target_freq);
 
-	return target_freq;
+	return min(target_freq, tegra->max_freq);
 }
 
 static irqreturn_t actmon_thread_isr(int irq, void *data)
