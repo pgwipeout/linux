@@ -1,0 +1,772 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+#include <dt-bindings/input/input.h>
+#include "tegra20.dtsi"
+#include "tegra20-xoom-pinmux.dtsi"
+#include "tegra20-xoom-cpcap.dtsi"
+
+/ {
+	model = "Motorola XOOM Tablet";
+	compatible = "nvidia,xoom", "nvidia,tegra20";
+
+	aliases {
+		rtc0 = &cpcap_rtc;
+		rtc1 = "/rtc@7000e000";
+		serial0 = &uartb; /* DEBUG PORT? */
+		serial1 = &uartc; /* Bluetooth */
+		serial2 = &uarta;
+		serial3 = &uartd;
+		serial4 = &uarte;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+		bootargs = "earlyprintk=vga gpt gpt_sector=0x03b6efff console=tty0 root=/dev/mmcblk2p10 rootwait video=1280x800@60";
+	};
+
+	memory@0 {
+		device_type = "memory";
+		reg = <0x00000000 0x40000000>;
+	};
+
+	host1x@50000000 {
+
+		dc@54200000 {
+			rgb {
+				status = "okay";
+				nvidia,panel = <&panel>;
+			};
+		};
+
+		hdmi@54280000 {
+			status = "okay";
+
+//			hdmi-supply = <&vdd_5v0_hdmi>;
+//			vdd-supply = <&hdmi_vdd_reg>;
+//			pll-supply = <&hdmi_pll_reg>;
+//			nvidia,ddc-i2c-bus = <&hdmi_ddc>;
+//			nvidia,hpd-gpio = <&gpio TEGRA_GPIO(N, 7) GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	pinmux@70000014 {
+		pinctrl-names = "default";
+		pinctrl-0 = <&state_default>;
+
+		state_default: pinmux {
+			/* Pinmux Defaults are in the DTSI */
+		};
+
+		sdmmc3_default: pinmux {
+			drive_sdmmc3 {
+				nvidia,pins = "drive_sdmmc3";
+			};
+		};
+
+		spi2_default: pinmux {
+			spia {
+				nvidia,pins = "spia";
+			};
+
+			spib {
+				nvidia,pins = "spib";
+			};
+
+			spic {
+				nvidia,pins = "spic";
+			};
+
+			spig {
+				nvidia,pins = "spig";
+			};
+		};
+	};
+
+	tegra_ac97: ac97@70002000 {
+		status = "okay";
+	};
+
+	tegra_i2s1: i2s@70002800 {
+		status = "okay";
+
+		mcbsp1_port: port {
+			cpu_dai1: endpoint {
+				dai-format = "i2s";
+				remote-endpoint = <&cpcap_audio_codec0>;
+				frame-master = <&cpcap_audio_codec0>;
+				bitclock-master = <&cpcap_audio_codec0>;
+			};
+		};
+	};
+
+	tegra_i2s2: i2s@70002a00 {
+		status = "okay";
+
+		mcbsp2_port: port {
+			cpu_dai2: endpoint {
+				dai-format = "i2s";
+				remote-endpoint = <&cpcap_audio_codec1>;
+				frame-master = <&cpcap_audio_codec1>;
+				bitclock-master = <&cpcap_audio_codec1>;
+			};
+		};
+	};
+
+	uarta: serial@70006000 {
+		compatible = "nvidia,tegra20-hsuart";
+		status = "okay";
+	};
+
+	uartb: serial@70006040 {
+		/* This is the debug UART, wherever it is */
+		compatible = "nvidia,tegra20-hsuart";
+		status = "okay";
+	};
+
+	uartc: serial@70006200 {
+		/* This is the bluetooth UART */
+		compatible = "nvidia,tegra20-hsuart";
+		status = "okay";
+		bluetooth {
+			compatible = "brcm,bcm43438-bt";
+			shutdown-gpios = <&gpio TEGRA_GPIO(U, 0) GPIO_ACTIVE_HIGH>;
+			device-wakeup-gpios = <&gpio TEGRA_GPIO(U, 1) GPIO_ACTIVE_HIGH>;
+			host-wakeup-gpios = <&gpio TEGRA_GPIO(U, 6) GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	uartd: serial@70006300 {
+		compatible = "nvidia,tegra20-hsuart";
+		status = "okay";
+	};
+
+	uarte: serial@70006400 {
+		compatible = "nvidia,tegra20-hsuart";
+		status = "okay";
+	};
+
+	pwm: pwm@7000a000 {
+		status = "okay";
+	};
+
+	i2c@7000c000 {
+		status = "okay";
+		clock-frequency = <200000>;
+
+		backlight: backlight@2c {
+			compatible = "ti,lp8550";
+			reg = <0x2c>;
+			power-supply = <&enable_backlight>;
+
+			bl-name = "backlight";
+			dev-ctrl = /bits/ 8 <0x05>;
+			init-brt = /bits/ 8 <0x50>;
+			/* Current */
+                        rom_a0h {
+                                rom-addr = /bits/ 8 <0xa0>;
+                                rom-val = /bits/ 8 <0xa1>;
+                        };
+			/* Boost Freq, En_pwm, I_ctrl, Temp_limit, Slope */
+                        rom_a1h {
+                                rom-addr = /bits/ 8 <0xa1>;
+                                rom-val = /bits/ 8 <0x67>;
+                        };
+			/* Adaptive Speed */
+                        rom_a2h {
+                                rom-addr = /bits/ 8 <0xa2>;
+                                rom-val = /bits/ 8 <0xbf>;
+                        };
+			/* UVLO */
+                        rom_a3h {
+                                rom-addr = /bits/ 8 <0xa3>;
+                                rom-val = /bits/ 8 <0x3f>;
+                        };
+			/* PWM_Resolution */
+                        rom_a4h {
+                                rom-addr = /bits/ 8 <0xa4>;
+                                rom-val = /bits/ 8 <0x08>;
+                        };
+			/* En_Vsync */
+                        rom_a5h {
+                                rom-addr = /bits/ 8 <0xa5>;
+                                rom-val = /bits/ 8 <0xea>;
+                        };
+			/* PLL */
+                        rom_a6h {
+                                rom-addr = /bits/ 8 <0xa6>;
+                                rom-val = /bits/ 8 <0x64>;
+                        };
+			/* PLL */
+                        rom_a7h {
+                                rom-addr = /bits/ 8 <0xa7>;
+                                rom-val = /bits/ 8 <0x2a>;
+                        };
+		};
+
+		als@4b {
+			/*max9635 ALS, noted just for location */
+//			reg = <0x4b>;
+//			interrupts = <&gpio TEGRA_GPIO(V, 1) IRQ_TYPE_LEVEL_LOW>;
+//			power-supply = <&vhvio>;
+		};
+
+		touch@5b {
+			compatible = "atmel,maxtouch";
+			reg = <0x5b>;
+			interrupt-parent = <&gpio>;
+			interrupts = <TEGRA_GPIO(V, 2) IRQ_TYPE_LEVEL_LOW>;
+			reset-gpios = <&gpio TEGRA_GPIO(R, 4) GPIO_ACTIVE_HIGH>;
+			power-supply = /* <&enable_touch>, */
+					<&enable_panel>;
+		};
+
+		barometer@77 {
+			/* BMP085 Barometer */
+			compatible = "bosch,bmp085";
+			reg = <0x77>;
+			reset-gpios = <&gpio TEGRA_GPIO(I, 3) GPIO_ACTIVE_LOW>;
+			interrupt-parent = <&gpio>;
+			interrupts = <TEGRA_GPIO(W, 0) IRQ_TYPE_EDGE_RISING>;
+			power-supply = <&vhvio>;
+		};
+	};
+
+	hdmi_ddc: i2c@7000c400 {
+		status = "okay";
+		clock-frequency = <100000>;
+
+//		nvhdcp1@3a {
+//			reg = <0x3a>;
+//		};
+
+//		tegra_edid@50 {
+//			reg = <0x50>;
+//		};
+	};
+
+	i2c@7000c500 {
+		status = "okay";
+		clock-frequency = <200000>;
+		/*Cameras are described here, but they are disabled because
+		there is no csi driver for the Tegra chip*/
+
+/*		dw9714@c {
+			/* DW9714 Camera Coil Driver */
+/*			compatible = "dongwoon,dw9714";
+			reg = <0xc>;
+			reset-gpios = <&gpio TEGRA_GPIO(I, 3) GPIO_ACTIVE_LOW>;
+			interrupt-parent = <&gpio>;
+			interrupts = <TEGRA_GPIO(W, 0) IRQ_TYPE_LEVEL_LOW>;
+			vdd-supply = <&vcam>;
+		};
+
+		ov5645: ov5650@36 {
+			/*Back Camera, ov5650 */
+/*			reg = <0x36>;
+			compatible = "ovti,ov5647";
+
+			enable-gpios = <&gpio TEGRA_GPIO(I, 3) GPIO_ACTIVE_LOW>;
+			reset-gpios = <&gpio TEGRA_GPIO(I, 3) GPIO_ACTIVE_LOW>;
+
+/*			port {
+				ov5645_ep: endpoint {
+					clock-lanes = <1>;
+					data-lanes = <0 2>;
+					remote-endpoint = <&vi_csi>;
+				};
+			};
+		};
+
+		soc2030@3c {
+			/*Front Camera, soc2030/mt9d113 */
+/*			reg = <0x3c>;
+		};
+*/
+		lm3559_led@53 {
+			/*Back Camera Flash, lm3559 */
+			compatible = "ti,lm3559";
+			reg = <0x53>;
+		};
+
+		l3g4200d@68 {
+			/*3 Axis Gyro, l3g4200d */
+			reg = <0x68>;
+			compatible = "st,l3g4200d-gyro";
+		};
+	};
+
+	i2c@7000d000 {
+		status = "okay";
+		clock-frequency = <200000>;
+
+		temperature-sensor@4c {
+			compatible = "onnn,nct1008";
+			reg = <0x4c>;
+		};
+
+		ak8975@c {
+			/* Compass */
+			compatible = "asahi-kasei,ak8975";
+			reg = <0x0c>;
+			interrupt-parent = <&gpio>;
+			interrupts = <TEGRA_GPIO(Q, 2) IRQ_TYPE_LEVEL_LOW>;
+/*			vdd-supply = <&ldo_3v3_gnss>;
+*/		};
+
+		kxtf9@f {
+			/* Three Axis Accel */
+			compatible = "kionix,kxtf9";
+			reg = <0xf>;
+			interrupt-parent = <&gpio>;
+			interrupts = <TEGRA_GPIO(V, 3) IRQ_TYPE_LEVEL_LOW>;
+/*			iovdd-supply = <&bar>;
+			vdd-supply = <&baz>;
+*/		};
+
+/*		cap-prox@12 {
+			/* Cap proxy sensor */
+/*			compatible = "microchip,cap1106";
+			reg = <0x12>;
+		};
+*/
+/*		max8649@60 {
+			/* Max8649 Step Down Converter CPU POWER */
+/*			reg = <0x60>;
+			compatible = "maxim,max8649";
+			regulator-name = "vdd_cpu";
+			regulator-min-microvolt = <770000>;
+			regulator-max-microvolt = <1400000>;
+			regulator-always-on;
+			regulator-boot-on;
+		};
+*/	};
+
+	spi@7000d600 {
+		status = "okay";
+		pinctrl-0 = <&spi2_default>;
+		/* CPCAP device. */
+	};
+
+	kbc@7000e200 {
+		status = "disabled";
+	};
+
+	pmc@7000e400 {
+		nvidia,suspend-mode = <0>;
+		nvidia,lp0-vec = <0x1e7f1020 8192>;
+		nvidia,invert-interrupt;
+		nvidia,cpu-pwr-good-time = <1500>;
+		nvidia,cpu-pwr-off-time = <1500>;
+		nvidia,core-pwr-good-time = <32382 32382>;
+		nvidia,core-pwr-off-time = <15>;
+		nvidia,core-power-req-active-high;
+		nvidia,sys-clock-req-active-high;
+	};
+
+	memory-controller@7000f000 {
+		emc-timings-0 {
+			nvidia,ram-code = <0>;
+			timing-80000000 {
+				clock-frequency = <30000000>;
+
+				nvidia,emem-configuration = <
+					0x00000025 /* EMC_RC */
+					0x000000ce /* EMC_RFC */
+					0x0000001a /* EMC_RAS */
+					0x00000009 /* EMC_RP */
+					0x00000005 /* EMC_R2W */
+					0x0000000d /* EMC_W2R */
+					0x00000004 /* EMC_R2P */
+					0x00000013 /* EMC_W2P */
+					0x00000009 /* EMC_RD_RCD */
+					0x00000009 /* EMC_WR_RCD */
+					0x00000004 /* EMC_RRD */
+					0x00000001 /* EMC_REXT */
+					0x00000007 /* EMC_WDV */
+					0x0000000a /* EMC_QUSE */
+					0x00000009 /* EMC_QRST */
+					0x0000000b /* EMC_QSAFE */
+					0x00000011 /* EMC_RDV */
+					0x00001820 /* EMC_REFRESH */
+					0x00000000 /* EMC_BURST_REFRESH_NUM */
+					0x00000004 /* EMC_PDEX2WR */
+					0x00000004 /* EMC_PDEX2RD */
+					0x00000005 /* EMC_PCHG2PDEN */
+					0x00000008 /* EMC_ACT2PDEN */
+					0x00000001 /* EMC_AR2PDEN */
+					0x0000000e /* EMC_RW2PDEN */
+					0x0000002a /* EMC_TXSR */
+					0x00000003 /* EMC_TCKE */
+					0x0000000f /* EMC_TFAW */
+					0x00000007 /* EMC_TRPAB */
+					0x00000005 /* EMC_TCLKSTABLE */
+					0x00000002 /* EMC_TCLKSTOP */
+					0x000004e0 /* EMC_TREFBW */
+					0x00000005 /* EMC_QUSE_EXTRA */
+					0x00000002 /* EMC_FBIO_CFG6 */
+					0x00000000 /* EMC_ODT_WRITE */
+					0x00000000 /* EMC_ODT_READ */
+					0x00000282 /* EMC_FBIO_CFG5 */
+					0xe04e048b /* EMC_CFG_DIG_DLL */
+					0x007e0010 /* EMC_DLL_XFORM_DQS */
+					0x00000000 /* EMC_DLL_XFORM_QUSE */
+					0x00000000 /* EMC_ZCAL_REF_CNT */
+					0x0000001b /* EMC_ZCAL_WAIT_CNT */
+					0x00000000 /* EMC_AUTO_CAL_INTERVAL */
+					0x00000000 /* EMC_CFG_CLKTRIM_0 */
+					0x00000000 /* EMC_CFG_CLKTRIM_1 */
+					0x00000000 /* EMC_CFG_CLKTRIM_2 */
+				>;
+			};
+		};
+	};
+
+	fuse@7000f800 {
+		vdd-supply = <&vfuse>;
+	};
+
+	usb@c5000000 {
+		compatible = "nvidia,tegra20-udc";
+		status = "okay";
+		dr_mode = "peripheral";
+//		dr_mode = "host";*/
+		vbus-supply = <&usb_power>; */
+	};
+
+	usb-phy@c5000000 {
+		status = "okay";
+/*		vbus-supply = <&usb_power>; */
+	};
+
+	usb@c5004000 {
+		status = "okay";
+	};
+
+	usb-phy@c5004000 {
+		status = "okay";
+		nvidia,phy-reset-gpio = <&gpio TEGRA_GPIO(G, 2) GPIO_ACTIVE_LOW>;
+	};
+
+/*	usb@c5008000 {
+		status = "okay";
+	};
+
+	usb-phy@c5008000 {
+		status = "okay";
+		mdm6600 {
+			compatible = "motorola,mapphone-mdm6600";
+			enable-gpios = <&gpio TEGRA_GPIO(S, 3) GPIO_ACTIVE_LOW>;
+			power-gpios = <&gpio TEGRA_GPIO(S, 6) GPIO_ACTIVE_HIGH>;
+			reset-gpios = <&gpio TEGRA_GPIO(Z, 1) GPIO_ACTIVE_HIGH>;
+			motorola,mode-gpios = <&gpio TEGRA_GPIO(Q, 5) GPIO_ACTIVE_HIGH>,
+					      <&gpio TEGRA_GPIO(S, 5) GPIO_ACTIVE_HIGH>;
+			motorola,cmd-gpios = <&gpio TEGRA_GPIO(C, 1) GPIO_ACTIVE_HIGH>,
+					     <&gpio TEGRA_GPIO(C, 6) GPIO_ACTIVE_HIGH>,
+					     <&gpio TEGRA_GPIO(Q, 3) GPIO_ACTIVE_HIGH>;
+			motorola,status-gpios = <&gpio TEGRA_GPIO(K, 3) GPIO_ACTIVE_HIGH>,
+						<&gpio TEGRA_GPIO(K, 4) GPIO_ACTIVE_HIGH>,
+						<&gpio TEGRA_GPIO(K, 2) GPIO_ACTIVE_HIGH>;
+			#phy-cells = <0>;
+		};
+	};
+*/
+	sdhci@c8000000 {
+/*		status = "okay";*/
+	};
+
+	sdhci@c8000200 {
+		/* Wifi card */
+		non-removable;
+		bus-width = <4>;
+		power-gpios = <&gpio TEGRA_GPIO(U, 4) GPIO_ACTIVE_HIGH>;
+		mmc-pwrseq = <&wifi_pwrseq>;
+		status = "okay";
+
+		brcmf: wifi@1 {
+			compatible = "brcm,bcm4329-fmac";
+			interrupt-parent = <&gpio>;
+			interrupts = <TEGRA_GPIO(U, 5) IRQ_TYPE_LEVEL_LOW>;
+			interrupt-names = "host-wake";
+		};
+
+	};
+
+	sdhci@c8000400 {
+		/* SD Card */
+		cd-gpios = <&gpio TEGRA_GPIO(I, 5) GPIO_ACTIVE_LOW>;
+		status = "okay";
+		pinctrl-0 = <&sdmmc3_default>;
+	};
+
+	sdhci@c8000600 {
+		bus-width = <8>;
+		status = "okay";
+	};
+
+	clocks {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		clk32k_in: clock@0 {
+			compatible = "fixed-clock";
+			reg = <0>;
+			#clock-cells = <0>;
+			clock-frequency = <32768>;
+		};
+	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+
+		volume-down {
+			label = "Volume Down";
+			gpios = <&gpio TEGRA_GPIO(R, 1) GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_VOLUMEDOWN>;
+			debounce-interval = <10>;
+		};
+
+		volume-up {
+			label = "Volume Up";
+			gpios = <&gpio TEGRA_GPIO(R, 0) GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_VOLUMEUP>;
+			debounce-interval = <10>;
+		};
+	};
+
+	panel: panel {
+		compatible = "auo,b101aw03", "simple-panel";
+
+		power-supply = <&enable_panel>;
+/*		enable-gpios = <&gpio TEGRA_GPIO(B, 2) GPIO_ACTIVE_HIGH>; */
+		ddc-i2c-bus = <&hdmi_ddc>;
+
+		backlight = <&backlight>;
+	};
+
+	regulators {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+/*		main_pwr_reg: regulator@0 {
+			compatible = "regulator-fixed";
+			reg = <0>;
+			regulator-name = "main_pwr";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			regulator-always-on;
+			regulator-boot-on;
+			enable-active-high;
+			gpio = <&gpio TEGRA_GPIO(V, 7) GPIO_ACTIVE_HIGH>;
+		};
+*/
+		usb_switch: regulator@1 {
+			compatible = "regulator-fixed";
+			reg = <1>;
+			regulator-name = "usb_switch";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+			enable-active-high;
+			gpio = <&gpio TEGRA_GPIO(V, 4) GPIO_ACTIVE_HIGH>;
+		};
+
+		usb_force_on: regulator@2 {
+			compatible = "regulator-fixed";
+			reg = <2>;
+			regulator-name = "usb_force_on";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			enable-active-high;
+			regulator-always-on;
+			gpio = <&gpio TEGRA_GPIO(C, 5) GPIO_ACTIVE_HIGH>;
+		};
+
+		usb_power: regulator@3 {
+			compatible = "regulator-fixed";
+			reg = <3>;
+			regulator-name = "usb_power";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			enable-active-high;
+			regulator-always-on;
+			gpio = <&gpio TEGRA_GPIO(T, 2) GPIO_ACTIVE_HIGH>;
+/*			vin-supply = <&vusb>; */
+		};
+
+		enable_panel: regulator@4 {
+			compatible = "regulator-fixed";
+			reg = <4>;
+			regulator-name = "enable_panel";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			enable-active-high;
+			regulator-boot-on;
+			regulator-always-on;
+			gpio = <&gpio TEGRA_GPIO(B, 2) GPIO_ACTIVE_HIGH>;
+		};
+
+		enable_touch: regulator@5 {
+			compatible = "regulator-fixed";
+			reg = <5>;
+			regulator-name = "enable_touch";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			enable-active-low;
+			regulator-always-on;
+			gpio = <&gpio TEGRA_GPIO(J, 2) GPIO_ACTIVE_LOW>;
+		};
+
+		enable_buttons: regulator@6 {
+			compatible = "regulator-fixed";
+			reg = <6>;
+			regulator-name = "enable_buttons";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			enable-active-low;
+			regulator-always-on;
+			gpio = <&gpio TEGRA_GPIO(Q, 0) GPIO_ACTIVE_LOW>;
+		};
+
+		enable_charger: regulator@7 {
+			compatible = "regulator-fixed";
+			reg = <7>;
+			regulator-name = "enable_charger";
+			regulator-min-microvolt = <7200000>;
+			regulator-max-microvolt = <7200000>;
+			enable-active-high;
+			regulator-always-on;
+			gpio = <&gpio TEGRA_GPIO(I, 4) GPIO_ACTIVE_HIGH>;
+		};
+
+		enable_backlight: regulator@8 {
+			compatible = "regulator-fixed";
+			reg = <8>;
+			regulator-name = "enable_backlight";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			enable-active-high;
+			regulator-always-on;
+			gpio = <&gpio TEGRA_GPIO(D, 0) GPIO_ACTIVE_HIGH>;
+		};
+
+		enable_bluetooth: regulator@9 {
+			compatible = "regulator-fixed";
+			reg = <9>;
+			regulator-name = "enable_bluetooth";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			enable-active-low;
+			regulator-always-on;
+			startup-delay-us = <200000>;
+			gpio = <&gpio TEGRA_GPIO(I, 7) GPIO_ACTIVE_LOW>;
+		};
+
+/*		enable_lte: regulator@10 {
+			compatible = "regulator-fixed";
+			reg = <10>;
+			regulator-name = "enable_lte";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			enable-active-high;
+			regulator-always-on;
+			startup-delay-us = <200000>;
+			gpio = <&gpio TEGRA_GPIO(G, 0) GPIO_ACTIVE_HIGH>;
+		};
+*/	};
+
+/*	soundcard {
+		compatible = "audio-graph-card";
+		label = "Xoom Audio";
+
+		simple-graph-card,widgets =
+			"Speaker", "Earpiece",
+			"Speaker", "Loudspeaker",
+			"Headphone", "Headphone Jack",
+			"Microphone", "Internal Mic";
+
+		simple-graph-card,routing =
+			"Earpiece", "EP",
+			"Loudspeaker", "SPKR",
+			"Headphone Jack", "HSL",
+			"Headphone Jack", "HSR",
+			"MICR", "Internal Mic";
+
+		dais = <&cpcap_audio_codec0>, <&cpu_dai2>;
+	};
+*/
+	sound {
+		comatible = "simple-audio-card";
+
+		simple-audio-card,widgets =
+			"Speaker", "Earpiece",
+			"Speaker", "Loudspeaker",
+			"Headphone", "Headphone Jack",
+			"Microphone", "Internal Mic";
+
+		simple-audio-card,routing =
+			"Earpiece", "EP",
+			"Loudspeaker", "SPKR",
+			"Headphone Jack", "HSL",
+			"Headphone Jack", "HSR",
+			"MICR", "Internal Mic";
+
+		simple-audio-card,cpu {
+			sound-dai = <&cpu_dai1>;
+		};
+
+		simple-audio-card,codec {
+			sound-dai = <&cpcap_audio_codec0>;
+			clocks = <&tegra_car TEGRA20_CLK_PLL_A>,
+				 <&tegra_car TEGRA20_CLK_PLL_A_OUT0>,
+				 <&tegra_car TEGRA20_CLK_CDEV1>;
+			clock-names = "pll_a", "pll_a_out0", "mclk";
+		};
+	};
+
+/*	sound {
+		compatible = "nvidia,tegra-audio-trimslice";
+		nvidia,i2s-controller = <&tegra_i2s1>;
+		nvidia,audio-codec = <&cpcap_audio_codec0>;
+
+		clocks = <&tegra_car TEGRA20_CLK_PLL_A>,
+			 <&tegra_car TEGRA20_CLK_PLL_A_OUT0>,
+			 <&tegra_car TEGRA20_CLK_CDEV1>;
+		clock-names = "pll_a", "pll_a_out0", "mclk";
+	};
+*/
+
+	gpio-poweroff {
+		compatible = "gpio-poweroff";
+		gpios = <&gpio TEGRA_GPIO(V, 7) GPIO_ACTIVE_LOW>;
+		timeout-ms = <3000>;
+	};
+
+	gpio-restart {
+		compatible = "gpio-restart";
+		gpios = <&gpio TEGRA_GPIO(G, 3) GPIO_ACTIVE_LOW>;
+		open-drain;
+		priority = <254>;
+		active-delay = <300>;
+		inactive-delay = <100>;
+		wait-delay = <3000>;
+	};
+
+	wifi_pwrseq: wifi_pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		reset-gpios = <&gpio TEGRA_GPIO(U, 2) GPIO_ACTIVE_LOW>;
+	};
+
+	gpio-leds {
+		compatible = "gpio-leds";
+		charge_enable {
+			compatible = "gpio-leds";
+			label = "Charger Enabled LED";
+			gpios = <&gpio TEGRA_GPIO(V, 7) GPIO_ACTIVE_LOW>;
+			default-state = "on";
+			linux,default-trigger = "heartbeat";
+		};
+	};
+};

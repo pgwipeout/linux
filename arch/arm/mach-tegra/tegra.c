@@ -101,6 +101,7 @@ static const char * const tegra_dt_board_compat[] = {
 	"nvidia,tegra124",
 	"nvidia,tegra114",
 	"nvidia,tegra30",
+	"nvidia,xoom",
 	"nvidia,tegra20",
 	NULL
 };
