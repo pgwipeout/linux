@@ -21,9 +21,7 @@
 
 	chosen {
 		stdout-path = "serial0:115200n8";
-		bootargs = "earlyprintk gpt gpt_sector=15073279 panic=10 console=ttyS0,115200n8 root=/dev/mmcblk0p9 rootwait drm.debug=0xe video=HDMI-A-1:1280x720@60";
-		/*bootargs = "earlyprintk gpt gpt_sector=15073279 panic=5 console=ttyS0,115200n8 root=/dev/sda1 rootwait drm.debug=0xe video=HDMI-A-1:1280x720@60 trace_event=clk_enable,clk_disable,clk_set_parent,clk_set_rate,clk_set_rate_complete,clk_set_parent_complete tp_printk"; */
-
+		bootargs = "earlyprintk gpt gpt_sector=15073279 panic=10 console=ttyS0,115200n8 root=/dev/sda1 rootwait drm.debug=0xe video=HDMI-A-1:1280x720@60";
 	};
 
 	cpus {
@@ -37,11 +35,9 @@
 			next-level-cache = <&L2>;
 			clock-latency = <65536>; /* two CLK32 periods */
 			#cooling-cells = <2>;
-			cooling-min-level = <0>;
-			cooling-max-level = <2>;
 			assigned-clocks = <&tegra_car TEGRA30_CLK_CCLK_G>;
-			vdd-cpu-supply = <&vddctrl_reg>;
-
+			cpu-supply = <&vddctrl_reg>;
+			core-supply = <&core_vdd_reg>;
 		};
 		cpu@1 {
 			next-level-cache = <&L2>;
@@ -72,7 +68,7 @@
 	memory@80000000 {
 		device_type = "memory";
 		reg = <0x80000000 0x3fe00000>;
-/*		reg = <0x80000000 0x40000000>;*/
+//		reg = <0x80000000 0x40000000>;
 	};
 
 	reserved-memory {
@@ -100,7 +96,6 @@
 			vdd-supply = <&vdd_vid_reg>;
 			pll-supply = <&ldo7_reg>;
 			hdmi-supply = <&sys_3v3_reg>;
-
 			nvidia,ddc-i2c-bus = <&hdmi_ddc>;
 			nvidia,hpd-gpio = <&gpio TEGRA_GPIO(N, 7) GPIO_ACTIVE_HIGH>;
 		};
@@ -1194,7 +1189,7 @@
                         sdmmc4_cmd_pt7 {
                                 nvidia,pins = "sdmmc4_cmd_pt7";
                                 nvidia,function = "sdmmc4";
-                                nvidia,pull = <TEGRA_PIN_PULL_NONE>;
+                                nvidia,pull = <TEGRA_PIN_PULL_UP>;
                                 nvidia,tristate = <TEGRA_PIN_DISABLE>;
                                 nvidia,enable-input = <TEGRA_PIN_ENABLE>;
                         };
@@ -1783,31 +1778,13 @@
 					      "sdmmc4_dat7_paa7",
 					      "sdmmc4_rst_n_pcc3";
 			};
-			drive_gma {
-				nvidia,pins = "drive_gma";
-				nvidia,pull-down-strength = <10>;
-				nvidia,pull-up-strength = <14>;
-				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
-				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
-			};
-			drive_gmb {
-				nvidia,pins = "drive_gmb";
-				nvidia,pull-down-strength = <10>;
-				nvidia,pull-up-strength = <14>;
-				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
-				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
-			};
-			drive_gmc {
-				nvidia,pins = "drive_gmc";
-				nvidia,pull-down-strength = <22>;
-				nvidia,pull-up-strength = <22>;
-				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
-				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
-			};
-			drive_gmd {
-				nvidia,pins = "drive_gmd";
-				nvidia,pull-down-strength = <30>;
-				nvidia,pull-up-strength = <46>;
+			drive_groups {
+				nvidia,pins = "drive_gma",
+					      "drive_gmb",
+					      "drive_gmc",
+					      "drive_gmd";
+				nvidia,pull-down-strength = <31>;
+				nvidia,pull-up-strength = <31>;
 				nvidia,slew-rate-rising = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
 				nvidia,slew-rate-falling = <TEGRA_PIN_SLEW_RATE_SLOWEST>;
 			};
@@ -1843,9 +1820,9 @@
 			compatible = "onnn,nct1008";
 			reg = <0x4c>;
 			vcc-supply = <&sys_3v3_reg>;
-			interrupt-parent = <&gpio>;
+/*			interrupt-parent = <&gpio>;
 			interrupts = <TEGRA_GPIO(CC, 2) IRQ_TYPE_LEVEL_LOW>;
-/*			update-interval = <4000>;
+			update-interval = <4000>;
 			local-low = <5000>;
 			local-high = <80000>;
 			local-critical = <90000>;
@@ -1959,7 +1936,7 @@
 			};
 		};
 
-		tps62361@60 {
+		core_vdd_reg: tps62361@60 {
 			compatible = "ti,tps62361";
 			reg = <0x60>;
 
@@ -2140,17 +2117,11 @@
 		nvidia,only-1-8-v;
 		keep-power-in-suspend;
 		cap-mmc-highspeed;
-		mmc-hs200-1_2v;
-		mmc-ddr-1_8v;
-/*		mmc-ddr-3_3v;*/
-/*		mmc-hs200-1_8v;*/
-/*		max-frequency = <18000000>;*/
-/*		max-frequency = <30000000>;*/
-		max-frequency = <32000000>;
+//		mmc-ddr-1_8v;
+		mmc-hs200-1_8v;
+		max-frequency = <25500000>;
 		bus-width = <8>;
 		pinctrl-0 = <&sdmmc4_default>;
-		fixed-emmc-driver-type = <2>;
-		dsr = <0x0400>;
 	};
 
 	usb@7d000000 {
