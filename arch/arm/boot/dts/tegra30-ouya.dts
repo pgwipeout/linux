@@ -2125,14 +2125,13 @@
 	};
 
 	usb@7d000000 {
-		compatible = "nvidia,tegra30-udc";
+		compatible = "nvidia,tegra30-ehci", "nvidia,tegra30-udc";
 		status = "okay";
-		dr_mode = "peripheral";
 	};
 
 	usb-phy@7d000000 {
 		status = "okay";
-/*		vbus-supply = <&usb1_vbus_reg>; */
+		dr_mode = "peripheral";
 	};
 
 	usb@7d004000 {
