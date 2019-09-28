@@ -5,6 +5,7 @@
 /* This means we have to do everything the bootloader is supposed to do. */
 
 #include <dt-bindings/input/input.h>
+#include <dt-bindings/thermal/thermal.h>
 #include "tegra30.dtsi"
 
 / {
@@ -34,7 +35,6 @@
 			reg = <0>;
 			next-level-cache = <&L2>;
 			clock-latency = <65536>; /* two CLK32 periods */
-			#cooling-cells = <2>;
 			assigned-clocks = <&tegra_car TEGRA30_CLK_CCLK_G>;
 			cpu-supply = <&vddctrl_reg>;
 			core-supply = <&core_vdd_reg>;
@@ -49,6 +49,43 @@
 
 		cpu@3 {
 			next-level-cache = <&L2>;
+		};
+	};
+
+	fan: gpio_fan {
+		compatible = "gpio-fan";
+		gpios = <&gpio TEGRA_GPIO(J, 2) GPIO_ACTIVE_HIGH>;
+		gpio-fan,speed-map = <0    0
+				      4500 1>;
+		#cooling-cells = <2>;
+	};
+
+	thermal-zones {
+		cpu_thermal: cpu-thermal {
+			polling-delay = <1000>;
+			polling-delay-passive = <250>;
+
+			thermal-sensors = <&cpu_temp 1>;
+
+			trips {
+				cpu_alert0: cpu-alert0 {
+					temperature = <45000>;
+					hysteresis = <5000>;
+					type = "active";
+				};
+				cpu_crit: cpu-crit {
+					temperature = <90000>;
+					hysteresis = <2000>;
+					type = "critical";
+				};
+			};
+
+			cooling-maps {
+				map0 {
+					trip = <&cpu_alert0>;
+					cooling-device = <&fan 1 THERMAL_NO_LIMIT>;
+				};
+			};
 		};
 	};
 
@@ -602,6 +639,13 @@
                                 nvidia,pull = <TEGRA_PIN_PULL_NONE>;
                                 nvidia,tristate = <TEGRA_PIN_DISABLE>;
                                 nvidia,enable-input = <TEGRA_PIN_ENABLE>;
+                        };
+			gmi_cs1_n_pj2 {
+                                nvidia,pins = "gmi_cs1_n_pj2";
+                                nvidia,function = "rsvd1";
+                                nvidia,pull = <TEGRA_PIN_PULL_NONE>;
+                                nvidia,tristate = <TEGRA_PIN_DISABLE>;
+                                nvidia,enable-input = <TEGRA_PIN_DISABLE>;
                         };
                         lcd_hsync_pj3 {
                                 nvidia,pins = "lcd_hsync_pj3";
@@ -1816,20 +1860,21 @@
 		status = "okay";
 		multi-master;
 		clock-frequency = <400000>;
-		temperature-sensor@4c {
+		cpu_temp: nct1008@4c {
 			compatible = "onnn,nct1008";
 			reg = <0x4c>;
 			vcc-supply = <&sys_3v3_reg>;
-/*			interrupt-parent = <&gpio>;
+			#thermal-sensor-cells = <1>;
+			interrupt-parent = <&gpio>;
 			interrupts = <TEGRA_GPIO(CC, 2) IRQ_TYPE_LEVEL_LOW>;
 			update-interval = <4000>;
-			local-low = <5000>;
+/*			local-low = <5000>;
 			local-high = <80000>;
 			local-critical = <90000>;
 			remote-low = <10>;
 			remote-high = <90000>;
 			remote-critical = <100000>;
-			remote-offset = <(-62125)>;
+			remote-offset = <(-1000)>;
 */		};
 
 		pmic: tps65911@2d {
@@ -2408,17 +2453,6 @@
 		regulator-max-microvolt = <5000000>;
 		enable-active-high;
 		gpio = <&gpio TEGRA_GPIO(DD, 0) GPIO_ACTIVE_HIGH>;
-		regulator-always-on;
-		regulator-boot-on;
-	};
-
-	vdd_fan: vdd_fan {
-		compatible = "regulator-fixed";
-		regulator-name = "+VDD_5V_FAN";
-		regulator-min-microvolt = <2000000>;
-		regulator-max-microvolt = <2000000>;
-		enable-active-high;
-		gpio = <&gpio TEGRA_GPIO(J, 2) GPIO_ACTIVE_HIGH>;
 		regulator-always-on;
 		regulator-boot-on;
 	};
