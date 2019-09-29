@@ -6,7 +6,6 @@ if ARM
 
 config ARCH_TEGRA_2x_SOC
 	bool "Enable support for Tegra20 family"
-	select ARCH_NEEDS_CPU_IDLE_COUPLED if SMP
 	select ARM_ERRATA_720789
 	select ARM_ERRATA_754327 if SMP
 	select ARM_ERRATA_764369 if SMP
