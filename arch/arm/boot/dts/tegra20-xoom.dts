@@ -22,7 +22,7 @@
 
 	chosen {
 		stdout-path = "serial0:115200n8";
-		bootargs = "earlyprintk=vga gpt gpt_sector=0x03b6efff console=tty0 root=/dev/mmcblk2p10 rootwait video=1280x800@60";
+		bootargs = "earlyprintk=vga gpt gpt_sector=0x03b6efff console=tty0 root=/dev/mmcblk2p10 rootwait video=1280x800@60 mitigations=off";
 	};
 
 	memory@0 {
