@@ -22,7 +22,7 @@
 
 	chosen {
 		stdout-path = "serial0:115200n8";
-		bootargs = "earlyprintk gpt gpt_sector=15073279 panic=10 console=ttyS0,115200n8 root=/dev/sda1 rootwait drm.debug=0xe video=HDMI-A-1:1280x720@60 mitigations=off";
+		bootargs = "earlycon=uart8250,mmio32,0x70006300 earlyprintk gpt gpt_sector=15073279 panic=10 console=ttyS0,115200n8 root=/dev/sda1 rootwait drm.debug=0xe video=HDMI-A-1:1280x720@60 mitigations=off";
 	};
 
 	cpus {
@@ -1838,6 +1838,7 @@
 	serial@70006200 {
 		status = "okay";
 		compatible = "nvidia,tegra30-hsuart";
+//		nvidia,adjust-baud-rates = "-4";
 
 		bluetooth {
 			compatible = "brcm,bcm43438-bt";
@@ -2170,13 +2171,19 @@
 	};
 
 	usb@7d000000 {
-		compatible = "nvidia,tegra30-ehci", "nvidia,tegra30-udc";
+//		compatible = "nvidia,tegra30-ehci", "nvidia,tegra30-udc";
+		compatible = "nvidia,tegra30-udc";
 		status = "okay";
+//		dr_mode = "host";
+		dr_mode = "otg";
+//		dr_mode = "peripheral";
 	};
 
 	usb-phy@7d000000 {
 		status = "okay";
-		dr_mode = "peripheral";
+//		dr_mode = "host";
+		dr_mode = "otg";
+//		dr_mode = "peripheral";
 	};
 
 	usb@7d004000 {
