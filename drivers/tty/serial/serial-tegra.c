@@ -366,7 +366,7 @@ static int tegra_check_rate_in_range(struct tegra_uart_port *tup)
 	    diff > (tup->cdata->error_tolerance_high_range * 100)) {
 		dev_err(tup->uport.dev,
 			"configured baud rate is out of range by %ld", diff);
-		return -EIO;
+//		return -EIO;
 	}
 
 	return 0;
