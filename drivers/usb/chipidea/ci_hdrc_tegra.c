@@ -25,7 +25,7 @@ struct tegra_udc_soc_info {
 };
 
 static const struct tegra_udc_soc_info tegra_udc_soc_info = {
-	.flags = CI_HDRC_REQUIRES_ALIGNED_DMA,
+	.flags = CI_HDRC_REQUIRES_ALIGNED_DMA | CI_HDRC_TEGRA_HOST,
 };
 
 static const struct of_device_id tegra_udc_of_match[] = {
@@ -60,6 +60,28 @@ static int tegra_udc_probe(struct platform_device *pdev)
 	soc = of_device_get_match_data(&pdev->dev);
 	if (!soc) {
 		dev_err(&pdev->dev, "failed to match OF data\n");
+		return -EINVAL;
+	}
+
+	/* check the dual mode and warn about bad configurations */
+	switch (usb_get_dr_mode(&pdev->dev)) {
+	case USB_DR_MODE_HOST:
+		dev_dbg(&pdev->dev, "dr_mode is set to host\n");
+		udc->data.dr_mode = USB_DR_MODE_HOST;
+		break;
+
+	case USB_DR_MODE_UNKNOWN:
+		dev_warn(&pdev->dev, "dr_mode is unset or unknown, setting host mode\n");
+		udc->data.dr_mode = USB_DR_MODE_HOST;
+		break;
+
+	case USB_DR_MODE_PERIPHERAL:
+		dev_dbg(&pdev->dev, "dr_mode is set to peripheral\n");
+		udc->data.dr_mode = USB_DR_MODE_PERIPHERAL;
+		break;
+
+	case USB_DR_MODE_OTG:
+		dev_err(&pdev->dev, "dr_mode is otg, tegra-udc does not support otg at this time\n");
 		return -EINVAL;
 	}
 
