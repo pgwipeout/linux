@@ -118,6 +118,13 @@ static int tegra_udc_probe(struct platform_device *pdev)
 	udc->data.usb_phy = udc->phy;
 	udc->data.capoffset = DEF_CAPOFFSET;
 
+	/* check the double reset flag */
+	if (of_property_read_bool(pdev->dev.of_node,
+				"nvidia,needs-double-reset")) {
+		dev_dbg(&pdev->dev, "setting double reset flag\n");
+		udc->data.flags |= CI_HDRC_TEGRA_DOUBLE_RESET;
+	}
+
 	udc->dev = ci_hdrc_add_device(&pdev->dev, pdev->resource,
 				      pdev->num_resources, &udc->data);
 	if (IS_ERR(udc->dev)) {
