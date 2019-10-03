@@ -20,7 +20,6 @@
 #include "ci.h"
 #include "bits.h"
 #include "host.h"
-#include "tegra.h"
 
 static struct hc_driver __read_mostly ci_ehci_hc_driver;
 static int (*orig_bus_suspend)(struct usb_hcd *hcd);
@@ -280,7 +279,7 @@ static int ci_ehci_hub_control(
 	if (ci->platdata->flags & CI_HDRC_TEGRA_DOUBLE_RESET &&
 	(typeReq == SetPortFeature && wValue == USB_PORT_FEAT_RESET)) {
 		spin_unlock_irqrestore(&ehci->lock, flags);
-		return tegra_ehci_internal_port_reset(ehci, status_reg);
+		return ci->platdata->port_reset(ehci, status_reg);
 	}
 
 	/*
@@ -373,8 +372,8 @@ int ci_hdrc_host_init(struct ci_hdrc *ci)
 	ci->roles[CI_ROLE_HOST] = rdrv;
 
 	if (ci->platdata->flags & CI_HDRC_TEGRA_HOST) {
-		ci_ehci_hc_driver.map_urb_for_dma = tegra_ehci_map_urb_for_dma;
-		ci_ehci_hc_driver.unmap_urb_for_dma = tegra_ehci_unmap_urb_for_dma;
+		ci_ehci_hc_driver.map_urb_for_dma = ci->platdata->map_urb_for_dma;
+		ci_ehci_hc_driver.unmap_urb_for_dma = ci->platdata->unmap_urb_for_dma;
 	}
 
 	return 0;
