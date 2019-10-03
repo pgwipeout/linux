@@ -22,7 +22,7 @@
 
 	chosen {
 		stdout-path = "serial0:115200n8";
-		bootargs = "earlycon=uart8250,mmio32,0x70006300 earlyprintk gpt gpt_sector=15073279 panic=10 console=ttyS0,115200n8 root=/dev/sda1 rootwait drm.debug=0xe video=HDMI-A-1:1280x720@60 mitigations=off";
+		bootargs = "earlycon=uart8250,mmio32,0x70006300 earlyprintk gpt gpt_sector=15073279 panic=10 console=tty0 console=ttyS0,115200n8 root=/dev/sda1 rootwait drm.debug=0xe video=1280x720@60 mitigations=off";
 	};
 
 	cpus {
@@ -128,12 +128,24 @@
 	};
 
 	host1x@50000000 {
+		dc@54200000 {
+			rgb {
+				status = "okay";
+			};
+		};
+
+		dc@54240000 {
+			rgb {
+				status = "okay";
+			};
+		};
+
 		hdmi@54280000 {
 			status = "okay";
-			vdd-supply = <&vdd_vid_reg>;
+/*			vdd-supply = <&vdd_vid_reg>;
 			pll-supply = <&ldo7_reg>;
 			hdmi-supply = <&sys_3v3_reg>;
-			nvidia,ddc-i2c-bus = <&hdmi_ddc>;
+*/			nvidia,ddc-i2c-bus = <&hdmi_ddc>;
 			nvidia,hpd-gpio = <&gpio TEGRA_GPIO(N, 7) GPIO_ACTIVE_HIGH>;
 		};
 	};
@@ -2014,8 +2026,8 @@
 	 memory-controller@7000f000 {
 		emc-timings-0 {
 			nvidia,ram-code = <0>;
-			timing-40000000 {
-				clock-frequency = <40000000>;
+			timing-400000000 {
+				clock-frequency = <400000000>;
 
 				nvidia,emem-configuration = <
 					0x0000000c /* MC_EMEM_ARB_CFG */
@@ -2038,8 +2050,8 @@
 					0x001f0000 /* MC_EMEM_ARB_RING1_THROTTLE */
 				>;
 			};
-			timing-80000000 {
-				clock-frequency = <80000000>;
+			timing-800000000 {
+				clock-frequency = <800000000>;
 
 				nvidia,emem-configuration = <
 					0x00000018 /* MC_EMEM_ARB_CFG */
@@ -2068,7 +2080,7 @@
         memory-controller@7000f400 {
 		emc-timings-0 {
 			nvidia,ram-code = <0>;
-			timing-40000000 {
+			timing-400000000 {
 				clock-frequency = <400000000>;
 
 				nvidia,emc-auto-cal-interval = <0x001fffff>;
@@ -2169,7 +2181,7 @@
 					0xff00ff89 /* EMC_CFG_RSV */
 				>;
 			};
-			timing-80000000 {
+			timing-800000000 {
 				clock-frequency = <800000000>;
 
 				nvidia,emc-auto-cal-interval = <0x001fffff>;
@@ -2312,8 +2324,8 @@
 //		compatible = "nvidia,tegra30-ehci", "nvidia,tegra30-udc";
 		compatible = "nvidia,tegra30-udc";
 		status = "okay";
-//		dr_mode = "host";
-		dr_mode = "otg";
+		dr_mode = "host";
+//		dr_mode = "otg";
 //		dr_mode = "peripheral";
 	};
 
