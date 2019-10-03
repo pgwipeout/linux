@@ -256,6 +256,9 @@ struct ci_hdrc {
 	bool				in_lpm;
 	bool				wakeup_int;
 	enum ci_revision		rev;
+	struct map_urb_for_dma		*map_urb_for_dma
+	struct unmap_urb_for_dma	*unmap_urb_for_dma
+	struct port_reset		*port_reset
 };
 
 static inline struct ci_role_driver *ci_role(struct ci_hdrc *ci)
