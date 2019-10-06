@@ -157,14 +157,18 @@ static int host_start(struct ci_hdrc *ci)
 	if (ci->platdata->pins_host)
 		pinctrl_select_state(ci->platdata->pctl,
 				     ci->platdata->pins_host);
+	/*
+	 *  usb_add_hcd() performs resetting of the host and ci->hcd is
+	 *  used by CI_HDRC_CONTROLLER_RESET_EVENT handlers.
+	 */
+	ci->hcd = hcd;
 
 	ret = usb_add_hcd(hcd, 0, 0);
 	if (ret) {
+		ci->hcd = NULL;
 		goto disable_reg;
 	} else {
 		struct usb_otg *otg = &ci->otg;
-
-		ci->hcd = hcd;
 
 		if (ci_otg_is_fsm_mode(ci)) {
 			otg->host = &hcd->self;

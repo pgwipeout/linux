@@ -35,6 +35,7 @@ struct tegra_ehci_hcd {
 
 struct tegra_udc_soc_info {
 	unsigned long flags;
+	bool has_hostpc;
 };
 
 struct tegra_dma_aligned_buffer {
@@ -104,6 +105,35 @@ static int tegra_ehci_internal_port_reset(struct ehci_hcd *ehci,
 	ehci_writel(ehci, saved_usbintr, &ehci->regs->intr_enable);
 	return retval;
 }
+
+static int tegra_notify_event(struct ci_hdrc *ci, unsigned event)
+{
+	struct usb_hcd *hcd;
+	struct ehci_hcd *ehci;
+	unsigned int txfifothresh;
+
+	switch (event) {
+	case CI_HDRC_CONTROLLER_RESET_EVENT:
+		hcd = ci->hcd;
+		if (!hcd)
+			/* the ci driver doesn't care if we fail */
+			return 0;
+
+		ehci = hcd_to_ehci(hcd);
+
+		/*
+		 * We should really pull this value out of tegra_ehci_soc_config, but
+		 * to avoid needing access to it, make use of the fact that Tegra20 is
+		 * the only one so far that needs a value of 10, and Tegra20 is the
+		 * only one which doesn't set has_hostpc.
+		 */
+		txfifothresh = ehci->has_hostpc ? 0x10 : 10;
+		ehci_writel(ehci, txfifothresh << 16, &ehci->regs->txfill_tuning);
+		break;
+	};
+
+	return 0;
+};
 
 static int tegra_ehci_hub_control(
 	struct usb_hcd	*hcd,
@@ -397,6 +427,7 @@ static int tegra_udc_probe(struct platform_device *pdev)
 	udc->data.map_urb_for_dma = tegra_map_urb_for_dma;
 	udc->data.unmap_urb_for_dma = tegra_unmap_urb_for_dma;
 	udc->data.hub_control = tegra_ehci_hub_control;
+	udc->data.notify_event = tegra_notify_event;
 
 	udc->dev = ci_hdrc_add_device(&pdev->dev, pdev->resource,
 				      pdev->num_resources, &udc->data);
