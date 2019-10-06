@@ -29,6 +29,7 @@ struct tegra_udc {
 };
 
 struct tegra_ehci_hcd {
+	struct reset_control *rst;
 	int port_resuming;
 	bool needs_double_reset;
 };
@@ -43,6 +44,57 @@ struct tegra_dma_aligned_buffer {
 	void *old_xfer_buffer;
 	u8 data[0];
 };
+
+static int tegra_reset_usb_controller(struct platform_device *pdev)
+{
+	struct device_node *phy_np;
+	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+	struct tegra_ehci_hcd *tegra =
+		(struct tegra_ehci_hcd *)hcd_to_ehci(hcd)->priv;
+	int err;
+
+	phy_np = of_parse_phandle(pdev->dev.of_node, "nvidia,phy", 0);
+	if (!phy_np)
+		return -ENOENT;
+
+	/*
+	 * The 1st USB controller contains some UTMI pad registers that are
+	 * global for all the controllers on the chip. Those registers are
+	 * also cleared when reset is asserted to the 1st controller.
+	 */
+	tegra->rst = of_reset_control_get_shared(phy_np, "utmi-pads");
+	if (IS_ERR(tegra->rst)) {
+		dev_warn(&pdev->dev,
+			 "can't get utmi-pads reset from the PHY\n");
+		dev_warn(&pdev->dev,
+			 "continuing, but please update your DT\n");
+	} else {
+		/*
+		 * PHY driver performs UTMI-pads reset in a case of
+		 * non-legacy DT.
+		 */
+		reset_control_put(tegra->rst);
+	}
+
+	of_node_put(phy_np);
+
+	/* reset control is shared, hence initialize it first */
+	err = reset_control_deassert(tegra->rst);
+	if (err)
+		return err;
+
+	err = reset_control_assert(tegra->rst);
+	if (err)
+		return err;
+
+	udelay(1);
+
+	err = reset_control_deassert(tegra->rst);
+	if (err)
+		return err;
+
+	return 0;
+}
 
 static int tegra_ehci_internal_port_reset(struct ehci_hcd *ehci,
 					u32 __iomem *portsc_reg)
@@ -438,6 +490,12 @@ static int tegra_udc_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, udc);
+
+	err = tegra_reset_usb_controller(pdev);
+	if (err) {
+		dev_err(&pdev->dev, "Failed to reset controller\n");
+		goto fail_power_off;
+	}
 
 	ehci = hcd_to_ehci(hcd);
 	tegra = (struct tegra_ehci_hcd *)ehci->priv;
