@@ -7,14 +7,11 @@
 #define __LINUX_USB_CHIPIDEA_H
 
 #include <linux/extcon.h>
-#include <linux/io.h>
-#include <linux/usb.h>
-#include <linux/usb/hcd.h>
 #include <linux/usb/otg.h>
 
-#include "../../../drivers/usb/host/ehci.h"
-
 struct ci_hdrc;
+struct usb_hcd;
+struct ehci_hcd;
 
 /**
  * struct ci_hdrc_cable - structure for external connector cable state tracking
@@ -67,7 +64,6 @@ struct ci_hdrc_platform_data {
 #define CI_HDRC_REQUIRES_ALIGNED_DMA	BIT(13)
 #define CI_HDRC_IMX_IS_HSIC		BIT(14)
 #define CI_HDRC_PMQOS			BIT(15)
-#define CI_HDRC_TEGRA_HOST		BIT(16)
 	enum usb_dr_mode	dr_mode;
 #define CI_HDRC_CONTROLLER_RESET_EVENT		0
 #define CI_HDRC_CONTROLLER_STOPPED_EVENT	1

@@ -4,6 +4,7 @@
  */
 
 #include <linux/clk.h>
+#include <linux/io.h>
 #include <linux/module.h>
 #include <linux/of_device.h>
 #include <linux/reset.h>
@@ -11,8 +12,8 @@
 #include <linux/usb/hcd.h>
 #include <linux/usb/chipidea.h>
 
-#include "ci.h"
 #include "../host/ehci.h"
+#include "ci.h"
 
 #define TEGRA_USB_DMA_ALIGN 32
 
@@ -34,16 +35,13 @@ struct tegra_dma_aligned_buffer {
 	u8 data[0];
 };
 
-static int tegra_ehci_internal_port_reset(
-	struct ehci_hcd *ehci,
-	u32 __iomem     *portsc_reg
-)
+static int tegra_ehci_internal_port_reset(struct ehci_hcd *ehci,
+					u32 __iomem *portsc_reg)
 {
-	u32             temp;
-	unsigned long   flags;
-	int             retval = 0;
-	int             i, tries;
-	u32             saved_usbintr;
+	u32 saved_usbintr, temp;
+	unsigned int i, tries;
+	unsigned long flags;
+	int retval = 0;
 
 	spin_lock_irqsave(&ehci->lock, flags);
 	saved_usbintr = ehci_readl(ehci, &ehci->regs->intr_enable);
@@ -179,7 +177,7 @@ static void tegra_unmap_urb_for_dma(struct usb_hcd *hcd, struct urb *urb)
 }
 
 static const struct tegra_udc_soc_info tegra_udc_soc_info = {
-	.flags = CI_HDRC_REQUIRES_ALIGNED_DMA | CI_HDRC_TEGRA_HOST,
+	.flags = CI_HDRC_REQUIRES_ALIGNED_DMA,
 };
 
 static const struct of_device_id tegra_udc_of_match[] = {

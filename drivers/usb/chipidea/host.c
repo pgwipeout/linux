@@ -371,10 +371,11 @@ int ci_hdrc_host_init(struct ci_hdrc *ci)
 	rdrv->name	= "host";
 	ci->roles[CI_ROLE_HOST] = rdrv;
 
-	if (ci->platdata->flags & CI_HDRC_TEGRA_HOST) {
+	if (ci->platdata->map_urb_for_dma)
 		ci_ehci_hc_driver.map_urb_for_dma = ci->platdata->map_urb_for_dma;
+
+	if (ci->platdata->unmap_urb_for_dma)
 		ci_ehci_hc_driver.unmap_urb_for_dma = ci->platdata->unmap_urb_for_dma;
-	}
 
 	return 0;
 }
