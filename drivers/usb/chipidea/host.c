@@ -275,13 +275,6 @@ static int ci_ehci_hub_control(
 		goto done;
 	}
 
-	/* For Tegra USB1 port we need to issue Port Reset twice internally */
-	if (ci->platdata->port_reset &&
-	(typeReq == SetPortFeature && wValue == USB_PORT_FEAT_RESET)) {
-		spin_unlock_irqrestore(&ehci->lock, flags);
-		return ci->platdata->port_reset(ehci, status_reg);
-	}
-
 	/*
 	 * After resume has finished, it needs do some post resume
 	 * operation for some SoCs.
@@ -376,6 +369,9 @@ int ci_hdrc_host_init(struct ci_hdrc *ci)
 
 	if (ci->platdata->unmap_urb_for_dma)
 		ci_ehci_hc_driver.unmap_urb_for_dma = ci->platdata->unmap_urb_for_dma;
+
+	if (ci->platdata->hub_control)
+		ci_ehci_hc_driver.hub_control = ci->platdata->hub_control;
 
 	return 0;
 }

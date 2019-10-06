@@ -94,7 +94,8 @@ struct ci_hdrc_platform_data {
 	int	(*map_urb_for_dma)(struct usb_hcd *hcd, struct urb *urb,
 						      gfp_t mem_flags);
 	void	(*unmap_urb_for_dma)(struct usb_hcd *hcd, struct urb *urb);
-	int	(*port_reset)(struct ehci_hcd *ehci, u32 *portsc_reg);
+	int	(*hub_control)(struct usb_hcd *hcd, u16 typeReq,
+			       u16 wValue, u16 wIndex, char *buf, u16 wLength);
 };
 
 /* Default offset of capability registers */

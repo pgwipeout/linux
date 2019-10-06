@@ -11,9 +11,12 @@
 #include <linux/usb.h>
 #include <linux/usb/hcd.h>
 #include <linux/usb/chipidea.h>
+#include <linux/usb/tegra_usb_phy.h>
 
 #include "../host/ehci.h"
 #include "ci.h"
+
+#define PORT_WAKE_BITS (PORT_WKOC_E|PORT_WKDISC_E|PORT_WKCONN_E)
 
 #define TEGRA_USB_DMA_ALIGN 32
 
@@ -23,6 +26,11 @@ struct tegra_udc {
 
 	struct usb_phy *phy;
 	struct clk *clk;
+};
+
+struct tegra_ehci_hcd {
+	int port_resuming;
+	bool needs_double_reset;
 };
 
 struct tegra_udc_soc_info {
@@ -94,6 +102,120 @@ static int tegra_ehci_internal_port_reset(struct ehci_hcd *ehci,
 
 	/* restore original interrupt enable bits */
 	ehci_writel(ehci, saved_usbintr, &ehci->regs->intr_enable);
+	return retval;
+}
+
+static int tegra_ehci_hub_control(
+	struct usb_hcd	*hcd,
+	u16		typeReq,
+	u16		wValue,
+	u16		wIndex,
+	char		*buf,
+	u16		wLength
+)
+{
+	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
+	struct tegra_ehci_hcd *tegra = (struct tegra_ehci_hcd *)ehci->priv;
+	u32 __iomem	*status_reg;
+	u32		temp;
+	unsigned long	flags;
+	int		retval = 0;
+
+	status_reg = &ehci->regs->port_status[(wIndex & 0xff) - 1];
+
+	spin_lock_irqsave(&ehci->lock, flags);
+
+	if (typeReq == GetPortStatus) {
+		temp = ehci_readl(ehci, status_reg);
+		if (tegra->port_resuming && !(temp & PORT_SUSPEND)) {
+			/* Resume completed, re-enable disconnect detection */
+			tegra->port_resuming = 0;
+			tegra_usb_phy_postresume(hcd->usb_phy);
+		}
+	}
+
+	else if (typeReq == SetPortFeature && wValue == USB_PORT_FEAT_SUSPEND) {
+		temp = ehci_readl(ehci, status_reg);
+		if ((temp & PORT_PE) == 0 || (temp & PORT_RESET) != 0) {
+			retval = -EPIPE;
+			goto done;
+		}
+
+		temp &= ~(PORT_RWC_BITS | PORT_WKCONN_E);
+		temp |= PORT_WKDISC_E | PORT_WKOC_E;
+		ehci_writel(ehci, temp | PORT_SUSPEND, status_reg);
+
+		/*
+		 * If a transaction is in progress, there may be a delay in
+		 * suspending the port. Poll until the port is suspended.
+		 */
+		if (ehci_handshake(ehci, status_reg, PORT_SUSPEND,
+						PORT_SUSPEND, 5000))
+			pr_err("%s: timeout waiting for SUSPEND\n", __func__);
+
+		set_bit((wIndex & 0xff) - 1, &ehci->suspended_ports);
+		goto done;
+	}
+
+	/* For USB1 port we need to issue Port Reset twice internally */
+	if (tegra->needs_double_reset &&
+	   (typeReq == SetPortFeature && wValue == USB_PORT_FEAT_RESET)) {
+		spin_unlock_irqrestore(&ehci->lock, flags);
+		return tegra_ehci_internal_port_reset(ehci, status_reg);
+	}
+
+	/*
+	 * Tegra host controller will time the resume operation to clear the bit
+	 * when the port control state switches to HS or FS Idle. This behavior
+	 * is different from EHCI where the host controller driver is required
+	 * to set this bit to a zero after the resume duration is timed in the
+	 * driver.
+	 */
+	else if (typeReq == ClearPortFeature &&
+					wValue == USB_PORT_FEAT_SUSPEND) {
+		temp = ehci_readl(ehci, status_reg);
+		if ((temp & PORT_RESET) || !(temp & PORT_PE)) {
+			retval = -EPIPE;
+			goto done;
+		}
+
+		if (!(temp & PORT_SUSPEND))
+			goto done;
+
+		/* Disable disconnect detection during port resume */
+		tegra_usb_phy_preresume(hcd->usb_phy);
+
+		ehci->reset_done[wIndex-1] = jiffies + msecs_to_jiffies(25);
+
+		temp &= ~(PORT_RWC_BITS | PORT_WAKE_BITS);
+		/* start resume signalling */
+		ehci_writel(ehci, temp | PORT_RESUME, status_reg);
+		set_bit(wIndex-1, &ehci->resuming_ports);
+
+		spin_unlock_irqrestore(&ehci->lock, flags);
+		msleep(20);
+		spin_lock_irqsave(&ehci->lock, flags);
+
+		/* Poll until the controller clears RESUME and SUSPEND */
+		if (ehci_handshake(ehci, status_reg, PORT_RESUME, 0, 2000))
+			pr_err("%s: timeout waiting for RESUME\n", __func__);
+		if (ehci_handshake(ehci, status_reg, PORT_SUSPEND, 0, 2000))
+			pr_err("%s: timeout waiting for SUSPEND\n", __func__);
+
+		ehci->reset_done[wIndex-1] = 0;
+		clear_bit(wIndex-1, &ehci->resuming_ports);
+
+		tegra->port_resuming = 1;
+		goto done;
+	}
+
+	spin_unlock_irqrestore(&ehci->lock, flags);
+
+	/* Handle the hub control events here */
+	return ehci_hub_control(hcd, typeReq, wValue, wIndex, buf, wLength);
+
+done:
+	spin_unlock_irqrestore(&ehci->lock, flags);
 	return retval;
 }
 
@@ -203,6 +325,9 @@ static int tegra_udc_probe(struct platform_device *pdev)
 {
 	const struct tegra_udc_soc_info *soc;
 	struct tegra_udc *udc;
+	struct usb_hcd *hcd;
+	struct ehci_hcd *ehci;
+	struct tegra_ehci_hcd *tegra;
 	int err;
 
 	udc = devm_kzalloc(&pdev->dev, sizeof(*udc), GFP_KERNEL);
@@ -271,11 +396,7 @@ static int tegra_udc_probe(struct platform_device *pdev)
 	udc->data.capoffset = DEF_CAPOFFSET;
 	udc->data.map_urb_for_dma = tegra_map_urb_for_dma;
 	udc->data.unmap_urb_for_dma = tegra_unmap_urb_for_dma;
-
-	/* check the double reset flag */
-	if (of_property_read_bool(pdev->dev.of_node,
-				"nvidia,needs-double-reset"))
-		udc->data.port_reset = tegra_ehci_internal_port_reset;
+	udc->data.hub_control = tegra_ehci_hub_control;
 
 	udc->dev = ci_hdrc_add_device(&pdev->dev, pdev->resource,
 				      pdev->num_resources, &udc->data);
@@ -286,6 +407,13 @@ static int tegra_udc_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, udc);
+
+	ehci = hcd_to_ehci(hcd);
+	tegra = (struct tegra_ehci_hcd *)ehci->priv;
+
+	/* check the double reset flag */
+	tegra->needs_double_reset = of_property_read_bool(pdev->dev.of_node,
+	"nvidia,needs-double-reset");
 
 	return 0;
 
