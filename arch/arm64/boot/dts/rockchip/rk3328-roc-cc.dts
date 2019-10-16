@@ -442,26 +442,27 @@
 
 &u2phy {
 	status = "okay";
-};
 
-&u2phy_host {
-	status = "okay";
-};
+	u2phy_host {
+		status = "okay";
+	};
 
-&u2phy_otg {
-	status = "okay";
-	dr_mode = "host";
-};
-
-&uart2 {
-	status = "okay";
+	u2phy_otg {
+		status = "okay";
+		dr_mode = "host";
+	};
 };
 
 &usb20_otg {
 	status = "okay";
+	dr_mode = "host";
 };
 
 &usb_host0_ehci {
+	status = "okay";
+};
+
+&usb_host0_ohci {
 	status = "okay";
 };
 
@@ -474,7 +475,7 @@
 	status = "okay";
 };
 
-&usb_host0_ohci {
+&uart2 {
 	status = "okay";
 };
 
