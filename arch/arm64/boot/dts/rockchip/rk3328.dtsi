@@ -971,6 +971,7 @@
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
+		clock-ranges;
 		status = "disabled";
 
 		usbdrd_dwc3: dwc3@ff600000 {
