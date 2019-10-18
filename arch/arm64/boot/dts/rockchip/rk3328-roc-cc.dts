@@ -457,17 +457,21 @@
 
 &u2phy {
 	status = "okay";
+};
 
-	u2phy_host {
-		status = "okay";
-		phy-supply = <&vcc_host1_5v>;
-	};
+&u2phy_host {
+	status = "okay";
+	phy-supply = <&vcc_host1_5v>;
+};
 
-	u2phy_otg {
-		status = "okay";
-		dr_mode = "host";
-		phy-supply = <&vcc_host1_5v>;
-	};
+&u2phy_otg {
+	status = "okay";
+	dr_mode = "host";
+	phy-supply = <&vcc_host1_5v>;
+};
+
+&uart2 {
+	status = "okay";
 };
 
 &usb20_otg {
@@ -480,10 +484,6 @@
 	status = "okay";
 };
 
-&usb_host0_ohci {
-	status = "okay";
-};
-
 &usbdrd3 {
 	status = "okay";
 };
@@ -493,7 +493,20 @@
 	status = "okay";
 };
 
-&uart2 {
+&u3phy {
+    phy-supply = <&vcc_host_5v>;
+	status = "okay";
+};
+
+&u3phy_utmi {
+	status = "okay";
+};
+
+&u3phy_pipe {
+	status = "okay";
+};
+
+&usb_host0_ohci {
 	status = "okay";
 };
 
