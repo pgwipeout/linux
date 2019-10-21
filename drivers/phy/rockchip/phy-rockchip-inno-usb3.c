@@ -26,7 +26,6 @@
 #include <linux/uaccess.h>
 
 #define U3PHY_PORT_NUM	2
-#define U3PHY_MAX_CLKS	4
 #define BIT_WRITEABLE_SHIFT	16
 #define SCHEDULE_DELAY	(60 * HZ)
 
@@ -131,7 +130,8 @@ struct rockchip_u3phy {
 	struct regmap *u3phy_grf;
 	struct regmap *grf;
 	int um_ls_irq;
-	struct clk *clks[U3PHY_MAX_CLKS];
+	struct clk **clks;
+	int num_clocks;
 	struct dentry *root;
 	struct gpio_desc *vbus_drv_gpio;
 	struct reset_control *rsts[U3PHY_RESET_MAX];
@@ -355,7 +355,7 @@ static int rockchip_u3phy_clk_enable(struct rockchip_u3phy *u3phy)
 {
 	int ret, clk;
 
-	for (clk = 0; clk < U3PHY_MAX_CLKS && u3phy->clks[clk]; clk++) {
+	for (clk = 0; clk < u3phy->num_clocks && u3phy->clks[clk]; clk++) {
 		ret = clk_prepare_enable(u3phy->clks[clk]);
 		if (ret)
 			goto err_disable_clks;
@@ -372,7 +372,7 @@ static void rockchip_u3phy_clk_disable(struct rockchip_u3phy *u3phy)
 {
 	int clk;
 
-	for (clk = U3PHY_MAX_CLKS - 1; clk >= 0; clk--)
+	for (clk = u3phy->num_clocks - 1; clk >= 0; clk--)
 		if (u3phy->clks[clk])
 			clk_disable_unprepare(u3phy->clks[clk]);
 }
@@ -674,13 +674,19 @@ static int rockchip_u3phy_parse_dt(struct rockchip_u3phy *u3phy,
 		dev_err(&pdev->dev, "failed to get vbus_drv\n");
 		return PTR_ERR(u3phy->vbus_drv_gpio);
 	}
+	
+	u3phy->num_clocks = of_clk_get_parent_count(np);
+	if (u3phy->num_clocks < 1)
+		dev_warn(&pdev->dev, "no clks found in dt");
 
-	for (clk = 0; clk < U3PHY_MAX_CLKS; clk++) {
+	for (clk = 0; clk < u3phy->num_clocks; clk++) {
 		u3phy->clks[clk] = of_clk_get(np, clk);
 		if (IS_ERR(u3phy->clks[clk])) {
 			ret = PTR_ERR(u3phy->clks[clk]);
 			if (ret == -EPROBE_DEFER)
 				goto err_put_clks;
+			dev_err(&pdev->dev, "failed to get clks, %i\n",
+				ret);
 			u3phy->clks[clk] = NULL;
 			break;
 		}
