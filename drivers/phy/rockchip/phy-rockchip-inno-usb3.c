@@ -772,7 +772,7 @@ static int rockchip_u3phy_port_init(struct rockchip_u3phy *u3phy,
 		return PTR_ERR(u3phy_port->base);
 	}
 
-	if (!of_node_cmp(child_np->name, "pipe")) {
+	if (of_node_name_eq(child_np, "pipe")) {
 		u3phy_port->type = U3PHY_TYPE_PIPE;
 		u3phy_port->refclk_25m_quirk =
 			of_property_read_bool(child_np,
