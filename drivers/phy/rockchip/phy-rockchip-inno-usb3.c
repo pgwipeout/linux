@@ -761,8 +761,8 @@ static int rockchip_u3phy_port_init(struct rockchip_u3phy *u3phy,
 
 	ret = of_address_to_resource(child_np, 0, &res);
 	if (ret) {
-		dev_err(u3phy->dev, "failed to get address resource(np-%s)\n",
-			child_np->name);
+		dev_err(u3phy->dev, "failed to get address resource(np-%pOFn)\n",
+			child_np);
 		return ret;
 	}
 
@@ -875,8 +875,8 @@ static int rockchip_u3phy_probe(struct platform_device *pdev)
 	}
 
 	if (of_property_read_u32_array(np, "reg", reg, 2)) {
-		dev_err(dev, "the reg property is not assigned in %s node\n",
-			np->name);
+		dev_err(dev, "the reg property is not assigned in %pOFn node\n",
+			np);
 		return -EINVAL;
 	}
 
@@ -897,8 +897,8 @@ static int rockchip_u3phy_probe(struct platform_device *pdev)
 	}
 
 	if (!u3phy->cfgs) {
-		dev_err(dev, "no phy-cfgs can be matched with %s node\n",
-			np->name);
+		dev_err(dev, "no phy-cfgs can be matched with %pOFn node\n",
+			np);
 		return -EINVAL;
 	}
 
