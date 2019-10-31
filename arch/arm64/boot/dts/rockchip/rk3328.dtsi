@@ -807,7 +807,7 @@
 
 	usb3phy_grf: syscon@ff460000 {
 		compatible = "rockchip,usb3phy-grf", "syscon";
-		reg = <0x0 0xff460000 0x0 0x1000>;
+		reg = <0x0 0xff460000 0x0 0x10000>;
 	};
 
 	u3phy: usb3-phy@ff470000 {
