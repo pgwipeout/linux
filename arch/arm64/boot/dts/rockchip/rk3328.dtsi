@@ -812,7 +812,7 @@
 
 	u3phy: usb3-phy@ff470000 {
 		compatible = "rockchip,rk3328-u3phy";
-		reg = <0x0 0xff470000 0x0 0x0>;
+		reg = <0x0 0xff470000 0x0 0x10000>;
 		rockchip,u3phygrf = <&usb3phy_grf>;
 		rockchip,grf = <&grf>;
 		interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
