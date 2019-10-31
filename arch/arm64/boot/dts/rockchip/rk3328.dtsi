@@ -856,12 +856,12 @@
 
 	usb3phy_grf: syscon@ff460000 {
 		compatible = "rockchip,usb3phy-grf", "syscon";
-		reg = <0x0 0xff460000 0x0 0x1000>;
+		reg = <0x0 0xff460000 0x0 0x10000>;
 	};
 
 	u3phy: usb3-phy@ff470000 {
 		compatible = "rockchip,rk3328-u3phy";
-		reg = <0x0 0xff470000 0x0 0x0>;
+		reg = <0x0 0xff470000 0x0 0x10000>;
 		rockchip,u3phygrf = <&usb3phy_grf>;
 		rockchip,grf = <&grf>;
 		interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
@@ -1028,10 +1028,9 @@
 
        usbdrd3: usb@ff600000 {
 		compatible = "rockchip,rk3328-dwc3", "rockchip,rk3399-dwc3";
-		clocks = <&cru SCLK_USB3OTG_REF>, <&cru SCLK_USB3OTG_SUSPEND>,
-			 <&cru ACLK_USB3OTG>;
-		clock-names = "ref", "suspend",
-			      "bus_early";
+		clocks = <&cru SCLK_USB3OTG_REF>, <&cru ACLK_USB3OTG>,
+			 <&cru SCLK_USB3OTG_SUSPEND>;
+		clock-names = "ref", "bus_early", "suspend";
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
@@ -1041,6 +1040,9 @@
 			compatible = "snps,dwc3";
 			reg = <0x0 0xff600000 0x0 0x100000>;
 			interrupts = <GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&cru SCLK_USB3OTG_REF>, <&cru ACLK_USB3OTG>,
+				 <&cru SCLK_USB3OTG_SUSPEND>;
+			clock-names = "ref", "bus_early", "suspend";
 			dr_mode = "otg";
 			phy_type = "utmi_wide";
 			snps,dis_enblslpm_quirk;
