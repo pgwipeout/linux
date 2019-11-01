@@ -117,7 +117,7 @@ struct rockchip_u3phy_cfg {
 
 struct rockchip_u3phy_port {
 	struct phy	*phy;
-	void __iomem	*base;
+	struct regmap	*regs;
 	unsigned int	index;
 	unsigned char	type;
 	bool		suspended;
@@ -143,7 +143,7 @@ struct rockchip_u3phy {
 	bool vbus_enabled;
 };
 
-static inline int param_write(void __iomem *base,
+static inline int param_write(struct regmap *regs,
 			      const struct u3phy_reg *reg, bool desired)
 {
 	unsigned int val, mask;
@@ -152,12 +152,12 @@ static inline int param_write(void __iomem *base,
 
 	mask = GENMASK(reg->bitend, reg->bitstart);
 	val = (tmp << reg->bitstart) | (mask << BIT_WRITEABLE_SHIFT);
-	ret = regmap_write(base, reg->offset, val);
+	ret = regmap_write(regs, reg->offset, val);
 
 	return ret;
 }
 
-static inline bool param_exped(void __iomem *base,
+static inline bool param_exped(struct regmap *regs,
 			       const struct u3phy_reg *reg,
 			       unsigned int value)
 {
@@ -165,7 +165,7 @@ static inline bool param_exped(void __iomem *base,
 	unsigned int tmp, orig;
 	unsigned int mask = GENMASK(reg->bitend, reg->bitstart);
 
-	ret = regmap_read(base, reg->offset, &orig);
+	ret = regmap_read(regs, reg->offset, &orig);
 	if (ret)
 		return false;
 
@@ -243,7 +243,9 @@ static ssize_t rockchip_u3phy_usb2_only_write(struct file *file,
 			u3phy_port = &u3phy->ports[index];
 			/* enable u3 rx termimation */
 			if (u3phy_port->type == U3PHY_TYPE_PIPE)
-				writel(0x30, u3phy_port->base + 0xd8);
+				regmap_write(u3phy_port->regs, 0xd8, 0x30);
+				/* this register is not in the TRM */
+				/* writel(0x30, u3phy_port->base + 0xd8); */
 		}
 
 		atomic_notifier_call_chain(&u3phy->usb_phy.notifier, 0, NULL);
@@ -265,7 +267,9 @@ static ssize_t rockchip_u3phy_usb2_only_write(struct file *file,
 			u3phy_port = &u3phy->ports[index];
 			/* disable u3 rx termimation */
 			if (u3phy_port->type == U3PHY_TYPE_PIPE)
-				writel(0x20, u3phy_port->base + 0xd8);
+				regmap_write(u3phy_port->regs, 0xd8, 0x20);
+				/* this register is not in the TRM */
+				/* writel(0x20, u3phy_port->base + 0xd8); */
 		}
 
 		atomic_notifier_call_chain(&u3phy->usb_phy.notifier, 0, NULL);
@@ -738,12 +742,20 @@ err_put_clks:
 	return ret;
 }
 
+static const struct regmap_config rockchip_u3phy_regmap_config = {
+	.reg_bits = 32,
+	.val_bits = 32,
+	.reg_stride = 4,
+	.name = DRIVER_NAME,
+};
+
 static int rockchip_u3phy_port_init(struct rockchip_u3phy *u3phy,
 				    struct rockchip_u3phy_port *u3phy_port,
 				    struct device_node *child_np)
 {
 	struct resource res;
 	struct phy *phy;
+	void __iomem *regs;
 	int ret;
 
 	dev_dbg(u3phy->dev, "u3phy port initialize\n");
@@ -766,10 +778,18 @@ static int rockchip_u3phy_port_init(struct rockchip_u3phy *u3phy,
 		return ret;
 	}
 
-	u3phy_port->base = devm_ioremap_resource(&u3phy_port->phy->dev, &res);
-	if (IS_ERR(u3phy_port->base)) {
+	regs = devm_ioremap_resource(&u3phy_port->phy->dev, &res);
+	if (IS_ERR(regs)) {
 		dev_err(u3phy->dev, "failed to remap phy regs\n");
-		return PTR_ERR(u3phy_port->base);
+		return PTR_ERR(regs);
+	}
+	
+	u3phy_port->regs = devm_regmap_init_mmio(u3phy_port->phy->dev, regs,
+						 &rockchip_u3phy_regmap_config);
+	
+	if (IS_ERR(u3phy_port->regs)) {
+		dev_err(u3phy->dev, "failed to create phy regmap\n");
+		return PTR_ERR(u3phy_port->regs);
 	}
 
 	if (of_node_name_eq(child_np, "pipe")) {
@@ -961,52 +981,72 @@ static int rk3328_u3phy_pipe_power(struct rockchip_u3phy *u3phy,
 				   struct rockchip_u3phy_port *u3phy_port,
 				   bool on)
 {
-	unsigned int reg;
+	unsigned int reg = 0;
 
 	if (on) {
-		reg = readl(u3phy_port->base + 0x1a8);
+		regmap_read(u3phy_port->regs, 0x1a8, &reg);
+		/* reg = readl(u3phy_port->base + 0x1a8); */
 		reg &= ~BIT(4); /* ldo power up */
-		writel(reg, u3phy_port->base + 0x1a8);
+		regmap_write(u3phy_port->regs, 0x1a8, reg);
+		/* writel(reg, u3phy_port->base + 0x1a8); */
 
-		reg = readl(u3phy_port->base + 0x044);
+		regmap_read(u3phy_port->regs, 0x44, &reg);
+		/* reg = readl(u3phy_port->base + 0x044); */
 		reg &= ~BIT(4); /* bg power on */
-		writel(reg, u3phy_port->base + 0x044);
+		regmap_write(u3phy_port->regs, 0x44, reg);
+		/* writel(reg, u3phy_port->base + 0x044); */
 
-		reg = readl(u3phy_port->base + 0x150);
+		regmap_read(u3phy_port->regs, 0x150, &reg);
+		/* reg = readl(u3phy_port->base + 0x150); */
 		reg |= BIT(6); /* tx bias enable */
-		writel(reg, u3phy_port->base + 0x150);
+		regmap_write(u3phy_port->regs, 0x150, reg);
+		/* writel(reg, u3phy_port->base + 0x150); */
 
-		reg = readl(u3phy_port->base + 0x080);
+		regmap_read(u3phy_port->regs, 0x80, &reg);
+		/* reg = readl(u3phy_port->base + 0x080); */
 		reg &= ~BIT(2); /* tx cm power up */
-		writel(reg, u3phy_port->base + 0x080);
+		regmap_write(u3phy_port->regs, 0x80, reg);
+		/* writel(reg, u3phy_port->base + 0x080); */
 
-		reg = readl(u3phy_port->base + 0x0c0);
+		regmap_read(u3phy_port->regs, 0xc0, &reg);
+		/* reg = readl(u3phy_port->base + 0x0c0); */
 		/* tx obs enable and rx cm enable */
 		reg |= (BIT(3) | BIT(4));
-		writel(reg, u3phy_port->base + 0x0c0);
+		regmap_write(u3phy_port->regs, 0xc0, reg);
+		/* writel(reg, u3phy_port->base + 0x0c0); */
 
 		udelay(1);
 	} else {
-		reg = readl(u3phy_port->base + 0x1a8);
+		regmap_read(u3phy_port->regs, 0x1a8, &reg);
+		/* reg = readl(u3phy_port->base + 0x1a8); */
 		reg |= BIT(4); /* ldo power down */
-		writel(reg, u3phy_port->base + 0x1a8);
+		regmap_write(u3phy_port->regs, 0x1a8, reg);
+		/* writel(reg, u3phy_port->base + 0x1a8); */
 
-		reg = readl(u3phy_port->base + 0x044);
+		regmap_read(u3phy_port->regs, 0x44, &reg);
+		/* reg = readl(u3phy_port->base + 0x044); */
 		reg |= BIT(4); /* bg power down */
-		writel(reg, u3phy_port->base + 0x044);
+		regmap_write(u3phy_port->regs, 0x44, reg);
+		/* writel(reg, u3phy_port->base + 0x044); */
 
-		reg = readl(u3phy_port->base + 0x150);
+		regmap_read(u3phy_port->regs, 0x150, &reg);
+		/* reg = readl(u3phy_port->base + 0x150); */
 		reg &= ~BIT(6); /* tx bias disable */
-		writel(reg, u3phy_port->base + 0x150);
+		regmap_write(u3phy_port->regs, 0x150, reg);
+		/* writel(reg, u3phy_port->base + 0x150); */
 
-		reg = readl(u3phy_port->base + 0x080);
+		regmap_read(u3phy_port->regs, 0x80, &reg);
+		/* reg = readl(u3phy_port->base + 0x080); */
 		reg |= BIT(2); /* tx cm power down */
-		writel(reg, u3phy_port->base + 0x080);
+		regmap_write(u3phy_port->regs, 0x80, reg);
+		/* writel(reg, u3phy_port->base + 0x080); */
 
-		reg = readl(u3phy_port->base + 0x0c0);
+		regmap_read(u3phy_port->regs, 0xc0, &reg);
+		/* reg = readl(u3phy_port->base + 0x0c0); */
 		/* tx obs disable and rx cm disable */
 		reg &= ~(BIT(3) | BIT(4));
-		writel(reg, u3phy_port->base + 0x0c0);
+		regmap_write(u3phy_port->regs, 0xc0, reg);
+		/* writel(reg, u3phy_port->base + 0x0c0); */
 	}
 
 	return 0;
@@ -1038,49 +1078,74 @@ static int rk3328_u3phy_tuning(struct rockchip_u3phy *u3phy,
 		of_property_read_u32(child_np, "rockchip,odt-val-tuning",
 				     &u3phy->apbcfg.u2_odt_tuning);
 
-		writel(u3phy->apbcfg.u2_pre_emp, u3phy_port->base + 0x030);
-		writel(u3phy->apbcfg.u2_pre_emp_sth, u3phy_port->base + 0x040);
-		writel(u3phy->apbcfg.u2_odt_tuning, u3phy_port->base + 0x11c);
+		regmap_write(u3phy_port->regs, 0x30, u3phy->apbcfg.u2_pre_emp);
+		regmap_write(u3phy_port->regs, 0x40, u3phy->apbcfg.u2_pre_emp_sth);
+		regmap_write(u3phy_port->regs, 0x11c, u3phy->apbcfg.u2_odt_tuning);
+		/* writel(u3phy->apbcfg.u2_pre_emp, u3phy_port->base + 0x030); */
+		/* writel(u3phy->apbcfg.u2_pre_emp_sth, u3phy_port->base + 0x040); */
+		/* writel(u3phy->apbcfg.u2_odt_tuning, u3phy_port->base + 0x11c); */
 	} else if (u3phy_port->type == U3PHY_TYPE_PIPE) {
 		if (u3phy_port->refclk_25m_quirk) {
 			dev_dbg(u3phy->dev, "switch to 25m refclk\n");
 			/* ref clk switch to 25M */
-			writel(0x64, u3phy_port->base + 0x11c);
-			writel(0x64, u3phy_port->base + 0x028);
-			writel(0x01, u3phy_port->base + 0x020);
-			writel(0x21, u3phy_port->base + 0x030);
-			writel(0x06, u3phy_port->base + 0x108);
-			writel(0x00, u3phy_port->base + 0x118);
+			regmap_write(u3phy_port->regs, 0x11c, 0x64);
+			regmap_write(u3phy_port->regs, 0x028, 0x64);
+			regmap_write(u3phy_port->regs, 0x020, 0x01);
+			regmap_write(u3phy_port->regs, 0x030, 0x21);
+			regmap_write(u3phy_port->regs, 0x108, 0x06);
+			regmap_write(u3phy_port->regs, 0x118, 0x00);
+			/* writel(0x64, u3phy_port->base + 0x11c); */
+			/* writel(0x64, u3phy_port->base + 0x028); */
+			/* writel(0x01, u3phy_port->base + 0x020); */
+			/* writel(0x21, u3phy_port->base + 0x030); */
+			/* writel(0x06, u3phy_port->base + 0x108); */
+			/* writel(0x00, u3phy_port->base + 0x118); */
 		} else {
 			/* configure for 24M ref clk */
-			writel(0x80, u3phy_port->base + 0x10c);
-			writel(0x01, u3phy_port->base + 0x118);
-			writel(0x38, u3phy_port->base + 0x11c);
-			writel(0x83, u3phy_port->base + 0x020);
-			writel(0x02, u3phy_port->base + 0x108);
+			regmap_write(u3phy_port->regs, 0x10c, 0x80);
+			regmap_write(u3phy_port->regs, 0x118, 0x01);
+			regmap_write(u3phy_port->regs, 0x11c, 0x38);
+			regmap_write(u3phy_port->regs, 0x020, 0x83);
+			regmap_write(u3phy_port->regs, 0x108, 0x02);
+			/* writel(0x80, u3phy_port->base + 0x10c); */
+			/* writel(0x01, u3phy_port->base + 0x118); */
+			/* writel(0x38, u3phy_port->base + 0x11c); */
+			/* writel(0x83, u3phy_port->base + 0x020); */
+			/* writel(0x02, u3phy_port->base + 0x108); */
 		}
 
 		/* Enable SSC */
 		udelay(3);
-		writel(0x08, u3phy_port->base + 0x000);
-		writel(0x0c, u3phy_port->base + 0x120);
+		regmap_write(u3phy_port->regs, 0x000, 0x08);
+		regmap_write(u3phy_port->regs, 0x000, 0x0c);
+		/* writel(0x08, u3phy_port->base + 0x000); */
+		/* writel(0x0c, u3phy_port->base + 0x120); */
 
 		/* Tuning Rx for compliance RJTL test */
-		writel(0x70, u3phy_port->base + 0x150);
-		writel(0x12, u3phy_port->base + 0x0c8);
-		writel(0x05, u3phy_port->base + 0x148);
-		writel(0x08, u3phy_port->base + 0x068);
-		writel(0xf0, u3phy_port->base + 0x1c4);
-		writel(0xff, u3phy_port->base + 0x070);
-		writel(0x0f, u3phy_port->base + 0x06c);
-		writel(0xe0, u3phy_port->base + 0x060);
+		regmap_write(u3phy_port->regs, 0x150, 0x70);
+		regmap_write(u3phy_port->regs, 0x0c8, 0x12);
+		regmap_write(u3phy_port->regs, 0x148, 0x05);
+		regmap_write(u3phy_port->regs, 0x068, 0x08);
+		regmap_write(u3phy_port->regs, 0x1c4, 0xf0);
+		regmap_write(u3phy_port->regs, 0x070, 0xff);
+		regmap_write(u3phy_port->regs, 0x06c, 0x0f);
+		regmap_write(u3phy_port->regs, 0x060, 0xe0);
+		/* writel(0x70, u3phy_port->base + 0x150); */
+		/* writel(0x12, u3phy_port->base + 0x0c8); */
+		/* writel(0x05, u3phy_port->base + 0x148); */
+		/* writel(0x08, u3phy_port->base + 0x068); */
+		/* writel(0xf0, u3phy_port->base + 0x1c4); */
+		/* writel(0xff, u3phy_port->base + 0x070); */
+		/* writel(0x0f, u3phy_port->base + 0x06c); */
+		/* writel(0xe0, u3phy_port->base + 0x060); */
 
 		/*
 		 * Tuning Tx to increase the bias current
 		 * used in TX driver and RX EQ, it can
 		 * also increase the voltage of LFPS.
 		 */
-		writel(0x08, u3phy_port->base + 0x180);
+		regmap_write(u3phy_port->regs, 0x180, 0x08);
+		/* writel(0x08, u3phy_port->base + 0x180); */
 	} else {
 		dev_err(u3phy->dev, "invalid u3phy port type\n");
 		return -EINVAL;
