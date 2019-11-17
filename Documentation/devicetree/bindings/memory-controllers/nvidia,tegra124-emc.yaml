@@ -29,6 +29,9 @@ properties:
     items:
       - const: emc
 
+  "#interconnect-cells":
+    const: 1
+
   nvidia,memory-controller:
     $ref: /schemas/types.yaml#/definitions/phandle
     description:
@@ -330,6 +333,7 @@ required:
   - clocks
   - clock-names
   - nvidia,memory-controller
+  - "#interconnect-cells"
 
 additionalProperties: false
 
@@ -356,6 +360,8 @@ examples:
         clock-names = "emc";
 
         nvidia,memory-controller = <&mc>;
+
+        #interconnect-cells = <1>;
 
         emc-timings-0 {
             nvidia,ram-code = <3>;
