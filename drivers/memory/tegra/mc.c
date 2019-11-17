@@ -699,6 +699,10 @@ static int tegra_mc_probe(struct platform_device *pdev)
 		}
 	}
 
+	err = tegra_icc_mc_setup_interconnect(mc);
+	if (err)
+		dev_err(&pdev->dev, "failed to initialize ICC: %d\n", err);
+
 	return 0;
 }
 
