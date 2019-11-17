@@ -3,6 +3,7 @@
  * Copyright (C) 2012 NVIDIA CORPORATION.  All rights reserved.
  */
 
+#include <dt-bindings/interconnect/tegra-icc.h>
 #include <dt-bindings/memory/tegra20-mc.h>
 
 #include "mc.h"
@@ -280,6 +281,17 @@ static const struct tegra_mc_reset_ops tegra20_mc_reset_ops = {
 	.reset_status = tegra20_mc_reset_status,
 };
 
+#define TEGRA20_MC_ICC(_name)				\
+	{						\
+		.name = #_name,				\
+		.id = TEGRA_ICC_MC_##_name,		\
+	}
+
+static const struct tegra_mc_icc_node tegra20_mc_icc_nodes[] = {
+	TEGRA20_MC_ICC(DC),
+	TEGRA20_MC_ICC(DCB),
+};
+
 const struct tegra_mc_soc tegra20_mc_soc = {
 	.clients = tegra20_mc_clients,
 	.num_clients = ARRAY_SIZE(tegra20_mc_clients),
@@ -290,4 +302,6 @@ const struct tegra_mc_soc tegra20_mc_soc = {
 	.reset_ops = &tegra20_mc_reset_ops,
 	.resets = tegra20_mc_resets,
 	.num_resets = ARRAY_SIZE(tegra20_mc_resets),
+	.icc_nodes = tegra20_mc_icc_nodes,
+	.num_icc_nodes = ARRAY_SIZE(tegra20_mc_icc_nodes),
 };
