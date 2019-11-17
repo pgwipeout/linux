@@ -6,6 +6,7 @@
 #include <linux/of.h>
 #include <linux/mm.h>
 
+#include <dt-bindings/interconnect/tegra-icc.h>
 #include <dt-bindings/memory/tegra124-mc.h>
 
 #include "mc.h"
@@ -1028,6 +1029,17 @@ static const unsigned long tegra124_mc_emem_regs[] = {
 	MC_EMEM_ARB_RING1_THROTTLE
 };
 
+#define TEGRA124_MC_ICC(_name)				\
+	{						\
+		.name = #_name,				\
+		.id = TEGRA_ICC_MC_##_name,		\
+	}
+
+static const struct tegra_mc_icc_node tegra124_mc_icc_nodes[] = {
+	TEGRA124_MC_ICC(DC),
+	TEGRA124_MC_ICC(DCB),
+};
+
 static const struct tegra_smmu_soc tegra124_smmu_soc = {
 	.clients = tegra124_mc_clients,
 	.num_clients = ARRAY_SIZE(tegra124_mc_clients),
@@ -1056,6 +1068,8 @@ const struct tegra_mc_soc tegra124_mc_soc = {
 	.reset_ops = &tegra_mc_reset_ops_common,
 	.resets = tegra124_mc_resets,
 	.num_resets = ARRAY_SIZE(tegra124_mc_resets),
+	.icc_nodes = tegra124_mc_icc_nodes,
+	.num_icc_nodes = ARRAY_SIZE(tegra124_mc_icc_nodes),
 };
 #endif /* CONFIG_ARCH_TEGRA_124_SOC */
 
@@ -1086,5 +1100,7 @@ const struct tegra_mc_soc tegra132_mc_soc = {
 	.reset_ops = &tegra_mc_reset_ops_common,
 	.resets = tegra124_mc_resets,
 	.num_resets = ARRAY_SIZE(tegra124_mc_resets),
+	.icc_nodes = tegra124_mc_icc_nodes,
+	.num_icc_nodes = ARRAY_SIZE(tegra124_mc_icc_nodes),
 };
 #endif /* CONFIG_ARCH_TEGRA_132_SOC */
