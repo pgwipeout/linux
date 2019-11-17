@@ -6,6 +6,7 @@
 #include <linux/of.h>
 #include <linux/mm.h>
 
+#include <dt-bindings/interconnect/tegra-icc.h>
 #include <dt-bindings/memory/tegra30-mc.h>
 
 #include "mc.h"
@@ -1011,6 +1012,17 @@ static const struct tegra_mc_reset tegra30_mc_resets[] = {
 	TEGRA30_MC_RESET(VI,       0x200, 0x204, 17),
 };
 
+#define TEGRA30_MC_ICC(_name)				\
+	{						\
+		.name = #_name,				\
+		.id = TEGRA_ICC_MC_##_name,		\
+	}
+
+static const struct tegra_mc_icc_node tegra30_mc_icc_nodes[] = {
+	TEGRA30_MC_ICC(DC),
+	TEGRA30_MC_ICC(DCB),
+};
+
 const struct tegra_mc_soc tegra30_mc_soc = {
 	.clients = tegra30_mc_clients,
 	.num_clients = ARRAY_SIZE(tegra30_mc_clients),
@@ -1025,4 +1037,6 @@ const struct tegra_mc_soc tegra30_mc_soc = {
 	.reset_ops = &tegra_mc_reset_ops_common,
 	.resets = tegra30_mc_resets,
 	.num_resets = ARRAY_SIZE(tegra30_mc_resets),
+	.icc_nodes = tegra30_mc_icc_nodes,
+	.num_icc_nodes = ARRAY_SIZE(tegra30_mc_icc_nodes),
 };
