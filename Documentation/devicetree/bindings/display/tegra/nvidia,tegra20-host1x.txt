@@ -20,6 +20,11 @@ Required properties:
 - reset-names: Must include the following entries:
   - host1x
 
+Each host1x client module having to perform DMA through the Memory Controller
+should have the interconnect endpoints set to the Memory Client and External
+Memory respectively, interconnect name must be set to "dma-mem".
+The interconnect property is optional.
+
 The host1x top-level node defines a number of children, each representing one
 of the following host1x client modules:
 
@@ -36,6 +41,11 @@ of the following host1x client modules:
   - reset-names: Must include the following entries:
     - mpe
 
+  Optional properties:
+  - interconnects: Must contain entry for the memory interconnect.
+  - interconnect-names: Must include the following entries:
+    - dma-mem
+
 - vi: video input
 
   Required properties:
@@ -48,6 +58,11 @@ of the following host1x client modules:
     See ../reset/reset.txt for details.
   - reset-names: Must include the following entries:
     - vi
+
+  Optional properties:
+  - interconnects: Must contain entry for the memory interconnect.
+  - interconnect-names: Must include the following entries:
+    - dma-mem
 
 - epp: encoder pre-processor
 
@@ -62,6 +77,11 @@ of the following host1x client modules:
   - reset-names: Must include the following entries:
     - epp
 
+  Optional properties:
+  - interconnects: Must contain entry for the memory interconnect.
+  - interconnect-names: Must include the following entries:
+    - dma-mem
+
 - isp: image signal processor
 
   Required properties:
@@ -75,6 +95,11 @@ of the following host1x client modules:
   - reset-names: Must include the following entries:
     - isp
 
+  Optional properties:
+  - interconnects: Must contain entry for the memory interconnect.
+  - interconnect-names: Must include the following entries:
+    - dma-mem
+
 - gr2d: 2D graphics engine
 
   Required properties:
@@ -87,6 +112,11 @@ of the following host1x client modules:
     See ../reset/reset.txt for details.
   - reset-names: Must include the following entries:
     - 2d
+
+  Optional properties:
+  - interconnects: Must contain entry for the memory interconnect.
+  - interconnect-names: Must include the following entries:
+    - dma-mem
 
 - gr3d: 3D graphics engine
 
@@ -105,6 +135,11 @@ of the following host1x client modules:
   - reset-names: Must include the following entries:
     - 3d
     - 3d2 (Only required on SoCs with two 3D clocks)
+
+  Optional properties:
+  - interconnects: Must contain entry for the memory interconnect.
+  - interconnect-names: Must include the following entries:
+    - dma-mem
 
 - dc: display controller
 
@@ -133,6 +168,9 @@ of the following host1x client modules:
   - nvidia,hpd-gpio: specifies a GPIO used for hotplug detection
   - nvidia,edid: supplies a binary EDID blob
   - nvidia,panel: phandle of a display panel
+  - interconnects: Must contain entry for the memory interconnect.
+  - interconnect-names: Must include the following entries:
+    - dma-mem
 
 - hdmi: High Definition Multimedia Interface
 
@@ -281,6 +319,11 @@ of the following host1x client modules:
   - reset-names: Must include the following entries:
     - vic
 
+  Optional properties:
+  - interconnects: Must contain entry for the memory interconnect.
+  - interconnect-names: Must include the following entries:
+    - dma-mem
+
 Example:
 
 / {
@@ -307,6 +350,9 @@ Example:
 			clocks = <&tegra_car TEGRA20_CLK_MPE>;
 			resets = <&tegra_car 60>;
 			reset-names = "mpe";
+
+			interconnects = <&mc TEGRA_ICC_MC_MPE &emc TEGRA_ICC_EMEM>;
+			interconnect-names = "dma-mem";
 		};
 
 		vi {
@@ -316,6 +362,9 @@ Example:
 			clocks = <&tegra_car TEGRA20_CLK_VI>;
 			resets = <&tegra_car 100>;
 			reset-names = "vi";
+
+			interconnects = <&mc TEGRA_ICC_MC_VI &emc TEGRA_ICC_EMEM>;
+			interconnect-names = "dma-mem";
 		};
 
 		epp {
@@ -325,6 +374,9 @@ Example:
 			clocks = <&tegra_car TEGRA20_CLK_EPP>;
 			resets = <&tegra_car 19>;
 			reset-names = "epp";
+
+			interconnects = <&mc TEGRA_ICC_MC_EPP &emc TEGRA_ICC_EMEM>;
+			interconnect-names = "dma-mem";
 		};
 
 		isp {
@@ -334,6 +386,9 @@ Example:
 			clocks = <&tegra_car TEGRA20_CLK_ISP>;
 			resets = <&tegra_car 23>;
 			reset-names = "isp";
+
+			interconnects = <&mc TEGRA_ICC_MC_ISP &emc TEGRA_ICC_EMEM>;
+			interconnect-names = "dma-mem";
 		};
 
 		gr2d {
@@ -343,6 +398,9 @@ Example:
 			clocks = <&tegra_car TEGRA20_CLK_GR2D>;
 			resets = <&tegra_car 21>;
 			reset-names = "2d";
+
+			interconnects = <&mc TEGRA_ICC_MC_2D &emc TEGRA_ICC_EMEM>;
+			interconnect-names = "dma-mem";
 		};
 
 		gr3d {
@@ -351,6 +409,9 @@ Example:
 			clocks = <&tegra_car TEGRA20_CLK_GR3D>;
 			resets = <&tegra_car 24>;
 			reset-names = "3d";
+
+			interconnects = <&mc TEGRA_ICC_MC_3D &emc TEGRA_ICC_EMEM>;
+			interconnect-names = "dma-mem";
 		};
 
 		dc@54200000 {
@@ -362,6 +423,9 @@ Example:
 			clock-names = "dc", "parent";
 			resets = <&tegra_car 27>;
 			reset-names = "dc";
+
+			interconnects = <&mc TEGRA_ICC_MC_DC &emc TEGRA_ICC_EMEM>;
+			interconnect-names = "dma-mem";
 
 			rgb {
 				status = "disabled";
@@ -377,6 +441,9 @@ Example:
 			clock-names = "dc", "parent";
 			resets = <&tegra_car 26>;
 			reset-names = "dc";
+
+			interconnects = <&mc TEGRA_ICC_MC_DCB &emc TEGRA_ICC_EMEM>;
+			interconnect-names = "dma-mem";
 
 			rgb {
 				status = "disabled";
