@@ -141,6 +141,11 @@ struct tegra_mc_reset_ops {
 			    const struct tegra_mc_reset *rst);
 };
 
+struct tegra_mc_icc_node {
+	const char *name;
+	unsigned int id;
+};
+
 struct tegra_mc_soc {
 	const struct tegra_mc_client *clients;
 	unsigned int num_clients;
@@ -160,6 +165,9 @@ struct tegra_mc_soc {
 	const struct tegra_mc_reset_ops *reset_ops;
 	const struct tegra_mc_reset *resets;
 	unsigned int num_resets;
+
+	const struct tegra_mc_icc_node *icc_nodes;
+	unsigned int num_icc_nodes;
 };
 
 struct tegra_mc {
@@ -183,5 +191,23 @@ struct tegra_mc {
 
 int tegra_mc_write_emem_configuration(struct tegra_mc *mc, unsigned long rate);
 unsigned int tegra_mc_get_emem_device_count(struct tegra_mc *mc);
+
+#ifdef CONFIG_INTERCONNECT_TEGRA
+int tegra_icc_mc_setup_interconnect(struct tegra_mc *mc);
+int tegra_icc_emc_setup_interconnect(struct device *emc_dev,
+				     unsigned int dram_data_bus_width_bytes);
+#else
+static inline int tegra_icc_mc_setup_interconnect(struct tegra_mc *mc)
+{
+	return 0;
+}
+
+static inline int
+tegra_icc_emc_setup_interconnect(struct device *emc_dev,
+				 unsigned int dram_data_bus_width_bytes)
+{
+	return 0;
+}
+#endif
 
 #endif /* __SOC_TEGRA_MC_H__ */
