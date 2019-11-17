@@ -1247,6 +1247,10 @@ static int tegra_emc_probe(struct platform_device *pdev)
 	if (IS_ENABLED(CONFIG_DEBUG_FS))
 		emc_debugfs_init(&pdev->dev, emc);
 
+	err = tegra_icc_emc_setup_interconnect(&pdev->dev, 64 / 8);
+	if (err)
+		dev_err(&pdev->dev, "failed to initialize ICC: %d\n", err);
+
 	return 0;
 };
 
