@@ -8738,6 +8738,15 @@ F:	include/dt-bindings/interconnect/
 F:	include/linux/interconnect-provider.h
 F:	include/linux/interconnect.h
 
+INTERCONNECT DRIVERS FOR NVIDIA TEGRA
+R:	Dmitry Osipenko <digetx@gmail.com>
+S:	Thierry Reding <thierry.reding@gmail.com>
+L:	linux-pm@vger.kernel.org
+L:	linux-tegra@vger.kernel.org
+S:	Supported
+F:	drivers/interconnect/tegra/
+F:	include/dt-bindings/interconnect/tegra-icc.h
+
 INVENSENSE MPU-3050 GYROSCOPE DRIVER
 M:	Linus Walleij <linus.walleij@linaro.org>
 L:	linux-iio@vger.kernel.org
