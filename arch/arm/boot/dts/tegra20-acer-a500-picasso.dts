@@ -491,6 +491,22 @@
 			reg = <1>;
 			#address-cells = <1>;
 			#size-cells = <0>;
+
+			embedded-controller@58 {
+				compatible = "acer,a500-iconia-ec";
+				reg = <0x58>;
+
+				system-power-controller;
+
+				battery {
+					compatible = "acer,a500-iconia-battery";
+					power-supplies = <&charger>;
+				};
+
+				leds {
+					compatible = "acer,a500-iconia-leds";
+				};
+			};
 		};
 	};
 
