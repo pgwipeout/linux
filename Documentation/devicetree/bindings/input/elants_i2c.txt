@@ -14,9 +14,13 @@ Optional properties:
 - reset-gpios: reset gpio the chip is connected to.
 - vcc33-supply: a phandle for the regulator supplying 3.3V power.
 - vccio-supply: a phandle for the regulator supplying IO power.
+- see [2] for additional properties
+
+For additional optional properties see: touchscreen.txt
 
 [0]: Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
 [1]: Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+[2]: Documentation/devicetree/bindings/input/touchscreen/touchscreen.txt
 
 Example:
 	&i2c1 {
