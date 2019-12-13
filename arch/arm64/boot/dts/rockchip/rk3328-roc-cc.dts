@@ -262,7 +262,8 @@
 	snps,reset-delays-us = <0 10000 50000>;
 //	snps,rxpbl = <0x4>;
 //	snps,txpbl = <0x4>;
-	max-frame-size = "1498";
+//	max-frame-size = "1498";
+	rockchip,bugged_tx_coe;
 	tx_delay = <0x24>;
 	rx_delay = <0x18>;
 	status = "okay";

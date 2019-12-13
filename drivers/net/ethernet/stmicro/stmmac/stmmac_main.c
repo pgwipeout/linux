@@ -3958,6 +3958,10 @@ static netdev_features_t stmmac_fix_features(struct net_device *dev,
 			priv->tso = false;
 	}
 
+	/* Disable Tx COE for bugged Rockchip devices */
+	if (priv->plat->bugged_tx_coe)
+		features &= ~NETIF_F_CSUM_MASK;
+
 	return features;
 }
 

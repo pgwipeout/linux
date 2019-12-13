@@ -604,6 +604,7 @@ stmmac_probe_config_dt(struct platform_device *pdev, const char **mac)
 		plat->stmmac_rst = NULL;
 	}
 
+	plat->bugged_tx_coe = of_property_read_bool(np, "rockchip,bugged_tx_coe");
 	return plat;
 
 error_hw_init:
