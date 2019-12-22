@@ -109,6 +109,7 @@ int tegra_output_probe(struct tegra_output *output)
 		if (IS_ERR(output->panel))
 			return PTR_ERR(output->panel);
 
+		of_drm_get_panel_orientation(panel, &output->panel->orientation);
 		of_node_put(panel);
 	}
 
