@@ -1287,8 +1287,8 @@ static int mxt_prepare_cfg_mem(struct mxt_data *data, struct mxt_cfg *cfg)
 {
 	struct device *dev = &data->client->dev;
 	struct mxt_object *object;
-	unsigned int type, instance, size, byte_offset;
-	int offset;
+	unsigned int type, instance, size;
+	int offset, byte_offset;
 	int ret;
 	int i;
 	u16 reg;
