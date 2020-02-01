@@ -352,7 +352,9 @@ static inline void hw_write_id_reg(struct ci_hdrc *ci, u32 offset,
  */
 static inline u32 hw_read(struct ci_hdrc *ci, enum ci_hw_regs reg, u32 mask)
 {
+	dev_dbg(ci->dev,"reading %pK, mask %x \n", ci->hw_bank.regmap[reg] , mask);
 	return ioread32(ci->hw_bank.regmap[reg]) & mask;
+	dev_dbg(ci->dev, "read complete\n");
 }
 
 #ifdef CONFIG_SOC_IMX28
@@ -369,10 +371,12 @@ static inline void imx28_ci_writel(u32 val, volatile void __iomem *addr)
 static inline void __hw_write(struct ci_hdrc *ci, u32 val,
 		void __iomem *addr)
 {
+	dev_dbg(ci->dev, "writing %pK, value %x\n", addr, val);
 	if (ci->imx28_write_fix)
 		imx28_ci_writel(val, addr);
 	else
 		iowrite32(val, addr);
+	dev_dbg(ci->dev, "write complete\n");
 }
 
 /**

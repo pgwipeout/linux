@@ -90,12 +90,12 @@ static int tegra_udc_probe(struct platform_device *pdev)
 	udc->data.capoffset = DEF_CAPOFFSET;
 
 	/* check the dual mode and warn about bad configurations */
-	if (usb_get_dr_mode(&pdev->dev) == USB_DR_MODE_OTG &&
+/*	if (usb_get_dr_mode(&pdev->dev) == USB_DR_MODE_OTG &&
 	   !of_property_read_bool(pdev->dev.of_node, "extcon")) {
 		dev_warn(&pdev->dev, "no extcon registered, otg unavailable");
 		udc->data.flags |= CI_HDRC_DUAL_ROLE_NOT_OTG;
 	}
-
+*/
 	udc->dev = ci_hdrc_add_device(&pdev->dev, pdev->resource,
 				      pdev->num_resources, &udc->data);
 	if (IS_ERR(udc->dev)) {
