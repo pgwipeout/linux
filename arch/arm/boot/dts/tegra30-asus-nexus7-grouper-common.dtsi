@@ -893,6 +893,10 @@
 		rt5640: audio-codec@1c {
 			compatible = "realtek,rt5640";
 			reg = <0x1c>;
+
+			realtek,dmic1-data-pin = <1>;
+			realtek,dmic2-data-pin = <0>;
+			realtek,in1-differential;
 		};
 
 		max77663@3c {
