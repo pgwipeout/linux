@@ -2992,7 +2992,9 @@ static int tegra_dc_probe(struct platform_device *pdev)
 
 	err = tegra_dc_rgb_probe(dc);
 	if (err < 0 && err != -ENODEV) {
-		dev_err(&pdev->dev, "failed to probe RGB output: %d\n", err);
+		if (err != -EPROBE_DEFER)
+			dev_err(&pdev->dev,
+				"failed to probe RGB output: %d\n", err);
 		return err;
 	}
 
