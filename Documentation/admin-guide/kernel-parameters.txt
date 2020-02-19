@@ -1382,6 +1382,11 @@
 			primary GPT is corrupted, it enables the backup/alternate
 			GPT to be used instead.
 
+	gpt_sector	[EFI] Forces GPT partition search to look at the
+			specified sector for a valid GPT header if the GPT is
+			not found at the beginning or the end of the block
+			device.
+
 	grcan.enable0=	[HW] Configuration of physical interface 0. Determines
 			the "Enable 0" bit of the configuration register.
 			Format: 0 | 1
