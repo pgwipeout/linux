@@ -7,6 +7,7 @@
 #ifndef LINUX_MMC_CARD_H
 #define LINUX_MMC_CARD_H
 
+#include <linux/blkdev.h>
 #include <linux/device.h>
 #include <linux/mod_devicetable.h>
 
@@ -323,5 +324,7 @@ bool mmc_card_is_blockaddr(struct mmc_card *card);
 #define mmc_card_mmc(c)		((c)->type == MMC_TYPE_MMC)
 #define mmc_card_sd(c)		((c)->type == MMC_TYPE_SD)
 #define mmc_card_sdio(c)	((c)->type == MMC_TYPE_SDIO)
+
+struct mmc_card *mmc_bdev_to_card(struct block_device *bdev);
 
 #endif /* LINUX_MMC_CARD_H */
