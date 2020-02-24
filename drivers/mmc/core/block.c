@@ -315,6 +315,20 @@ struct mmc_card *mmc_bdev_to_card(struct block_device *bdev)
 	return md->queue.card;
 }
 
+int mmc_bdev_to_part_type(struct block_device *bdev)
+{
+	struct mmc_blk_data *md;
+	struct mmc_card *card;
+
+	card = mmc_bdev_to_card(bdev);
+	if (!card)
+		return -EINVAL;
+
+	md = mmc_blk_get(bdev->bd_disk);
+
+	return md->part_type;
+}
+
 static int mmc_blk_open(struct block_device *bdev, fmode_t mode)
 {
 	struct mmc_blk_data *md = mmc_blk_get(bdev->bd_disk);
