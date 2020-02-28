@@ -2905,6 +2905,27 @@ static void mmc_blk_remove_debugfs(struct mmc_card *card,
 
 #endif /* CONFIG_DEBUG_FS */
 
+static int mmc_blk_rescan_disk(struct mmc_blk_data *md)
+{
+	struct block_device *bdev;
+
+	bdev = blkdev_get_by_dev(disk_devt(md->disk), FMODE_READ | FMODE_EXCL,
+				 md);
+	if (IS_ERR(bdev)) {
+		pr_err("%s: %s: failed to get block device\n",
+		       __func__, md->disk->disk_name);
+		return PTR_ERR(bdev);
+	}
+
+	mutex_lock(&bdev->bd_mutex);
+	bdev_disk_changed(bdev, false);
+	mutex_unlock(&bdev->bd_mutex);
+
+	blkdev_put(bdev, FMODE_READ | FMODE_EXCL);
+
+	return 0;
+}
+
 static int mmc_blk_probe(struct mmc_card *card)
 {
 	struct mmc_blk_data *md, *part_md;
@@ -2947,6 +2968,13 @@ static int mmc_blk_probe(struct mmc_card *card)
 		if (mmc_add_disk(part_md))
 			goto out;
 	}
+
+	/*
+	 * Quirk for NVIDIA Tegra devices that store FS partition table
+	 * on a boot partition.
+	 */
+	if (card->quirks & MMC_QUIRK_BLKDEV_NEEDS_RESCAN)
+		mmc_blk_rescan_disk(md);
 
 	/* Add two debugfs entries */
 	mmc_blk_add_debugfs(card, md);
