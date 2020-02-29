@@ -1930,6 +1930,8 @@ static int udc_start(struct ci_hdrc *ci)
 	struct usb_otg_caps *otg_caps = &ci->platdata->ci_otg_caps;
 	int retval = 0;
 
+	dev_dbg(ci->dev, "ci otg udc start\n");
+
 	ci->gadget.ops          = &usb_gadget_ops;
 	ci->gadget.speed        = USB_SPEED_UNKNOWN;
 	ci->gadget.max_speed    = USB_SPEED_HIGH;
@@ -1973,6 +1975,8 @@ static int udc_start(struct ci_hdrc *ci)
 	pm_runtime_no_callbacks(&ci->gadget.dev);
 	pm_runtime_enable(&ci->gadget.dev);
 
+	dev_dbg(ci->dev, "ci otg udc complete\n");
+
 	return retval;
 
 destroy_eps:
@@ -1981,6 +1985,7 @@ free_pools:
 	dma_pool_destroy(ci->td_pool);
 free_qh_pool:
 	dma_pool_destroy(ci->qh_pool);
+	dev_dbg(ci->dev, "ci otg udc failed\n");
 	return retval;
 }
 

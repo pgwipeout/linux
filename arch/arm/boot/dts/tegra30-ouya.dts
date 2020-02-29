@@ -24,7 +24,7 @@
 
 	chosen {
 		stdout-path = "serial0:115200n8";
-		bootargs = "earlycon=uart8250,mmio32,0x70006300 earlyprintk gpt gpt_sector=15073279 panic=10 console=tty0 console=ttyS0,115200n8 root=/dev/sda1 rootwait drm.debug=0xff video=1280x720@60 mitigations=off";
+		bootargs = "earlycon=uart8250,mmio32,0x70006300 earlyprintk gpt gpt_sector=15073279 panic=10 console=tty0 console=ttyS0,115200n8 root=/dev/sda1 rootwait drm.debug=0xff video=1280x720@60 mitigations=off usbcore.autosuspend=-1";
 	};
 
 	cpus {

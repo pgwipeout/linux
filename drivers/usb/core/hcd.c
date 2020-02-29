@@ -2151,6 +2151,7 @@ int hcd_bus_suspend(struct usb_device *rhdev, pm_message_t msg)
 		dev_dbg(&rhdev->dev, "bus %s fail, err %d\n",
 				"suspend", status);
 	}
+	dev_dbg(&rhdev->dev, "successfully suspended the bus.\n");
 	return status;
 }
 

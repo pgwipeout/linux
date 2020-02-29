@@ -131,10 +131,14 @@ void ci_handle_vbus_change(struct ci_hdrc *ci)
 	if (!ci->is_otg)
 		return;
 
-	if (hw_read_otgsc(ci, OTGSC_BSV) && !ci->vbus_active)
+	if (hw_read_otgsc(ci, OTGSC_BSV) && !ci->vbus_active) {
+		dev_dbg(ci->dev, "ci otg vbus connect\n");
 		usb_gadget_vbus_connect(&ci->gadget);
-	else if (!hw_read_otgsc(ci, OTGSC_BSV) && ci->vbus_active)
+	}
+	else if (!hw_read_otgsc(ci, OTGSC_BSV) && ci->vbus_active) {
+		dev_dbg(ci->dev, "ci otg vbus disconnect\n");
 		usb_gadget_vbus_disconnect(&ci->gadget);
+	}
 }
 
 /**

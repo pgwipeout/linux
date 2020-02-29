@@ -354,7 +354,6 @@ static inline u32 hw_read(struct ci_hdrc *ci, enum ci_hw_regs reg, u32 mask)
 {
 	dev_dbg(ci->dev,"reading %pK, mask %x \n", ci->hw_bank.regmap[reg] , mask);
 	return ioread32(ci->hw_bank.regmap[reg]) & mask;
-	dev_dbg(ci->dev, "read complete\n");
 }
 
 #ifdef CONFIG_SOC_IMX28

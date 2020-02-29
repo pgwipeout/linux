@@ -540,7 +540,9 @@ static irqreturn_t ci_irq(int irq, void *data)
 	irqreturn_t ret = IRQ_NONE;
 	u32 otgsc = 0;
 
+	dev_dbg(ci->dev, "ci_irq # %i\n", irq);
 	if (ci->in_lpm) {
+		dev_dbg(ci->dev, "ci in lpm\n");
 		disable_irq_nosync(irq);
 		ci->wakeup_int = true;
 		pm_runtime_get(ci->dev);
@@ -548,8 +550,10 @@ static irqreturn_t ci_irq(int irq, void *data)
 	}
 
 	if (ci->is_otg) {
+		dev_dbg(ci->dev, "ci otg\n");
 		otgsc = hw_read_otgsc(ci, ~0);
 		if (ci_otg_is_fsm_mode(ci)) {
+			dev_dbg(ci->dev, "ci otg is fsm mode\n");
 			ret = ci_otg_fsm_irq(ci);
 			if (ret == IRQ_HANDLED)
 				return ret;
@@ -561,10 +565,12 @@ static irqreturn_t ci_irq(int irq, void *data)
 	 * switch.
 	 */
 	if (ci->is_otg && (otgsc & OTGSC_IDIE) && (otgsc & OTGSC_IDIS)) {
+		dev_dbg(ci->dev, "ci otg id change\n");
 		ci->id_event = true;
 		/* Clear ID change irq status */
 		hw_write_otgsc(ci, OTGSC_IDIS, OTGSC_IDIS);
 		ci_otg_queue_work(ci);
+		dev_dbg(ci->dev, "ci otg id change complete\n");
 		return IRQ_HANDLED;
 	}
 
@@ -573,10 +579,12 @@ static irqreturn_t ci_irq(int irq, void *data)
 	 * and disconnection events.
 	 */
 	if (ci->is_otg && (otgsc & OTGSC_BSVIE) && (otgsc & OTGSC_BSVIS)) {
+		dev_dbg(ci->dev, "ci otg vbus change\n");
 		ci->b_sess_valid_event = true;
 		/* Clear BSV irq */
 		hw_write_otgsc(ci, OTGSC_BSVIS, OTGSC_BSVIS);
 		ci_otg_queue_work(ci);
+		dev_dbg(ci->dev, "ci otg vbus change complete\n");
 		return IRQ_HANDLED;
 	}
 
@@ -911,6 +919,7 @@ static inline void ci_role_destroy(struct ci_hdrc *ci)
 
 static void ci_get_otg_capable(struct ci_hdrc *ci)
 {
+	dev_dbg(ci->dev, "ci otg capable\n");
 	if (ci->platdata->flags & CI_HDRC_DUAL_ROLE_NOT_OTG)
 		ci->is_otg = false;
 	else
@@ -922,6 +931,7 @@ static void ci_get_otg_capable(struct ci_hdrc *ci)
 		/* Disable and clear all OTG irq */
 		hw_write_otgsc(ci, OTGSC_INT_EN_BITS | OTGSC_INT_STATUS_BITS,
 							OTGSC_INT_STATUS_BITS);
+	dev_dbg(ci->dev, "ci otg capable complete\n");
 	}
 }
 
