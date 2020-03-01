@@ -24,7 +24,8 @@
 
 	chosen {
 		stdout-path = "serial0:115200n8";
-		bootargs = "earlycon=uart8250,mmio32,0x70006300 earlyprintk gpt gpt_sector=15073279 panic=10 console=tty0 console=ttyS0,115200n8 root=/dev/sda1 rootwait drm.debug=0xff video=1280x720@60 mitigations=off usbcore.autosuspend=-1";
+		bootargs = "earlycon=uart8250,mmio32,0x70006300 earlyprintk panic=10 console=tty0 console=ttyS0,115200n8 root=/dev/sda1 rootwait video=1280x720@60 mitigations=off usbcore.autosuspend=-1";
+		//bootargs = "earlycon=uart8250,mmio32,0x70006300 earlyprintk gpt gpt_sector=15073279 panic=10 console=tty0 console=ttyS0,115200n8 root=/dev/sda1 rootwait drm.debug=0xff video=1280x720@60 mitigations=off usbcore.autosuspend=-1";
 	};
 
 	cpus {
@@ -223,8 +224,8 @@
 			reg = <0x4c>;
 			vcc-supply = <&sys_3v3_reg>;
 			#thermal-sensor-cells = <1>;
-			interrupt-parent = <&gpio>;
-			interrupts = <TEGRA_GPIO(CC, 2) IRQ_TYPE_LEVEL_LOW>;
+//			interrupt-parent = <&gpio>;
+//			interrupts = <TEGRA_GPIO(CC, 2) IRQ_TYPE_LEVEL_LOW>;
 			update-interval = <4000>;
 /*			local-low = <5000>;
 			local-high = <80000>;
@@ -423,8 +424,9 @@
 		keep-power-in-suspend;
 		cap-mmc-highspeed;
 //		mmc-ddr-1_8v;
-		mmc-hs200-1_8v;
-		max-frequency = <25500000>;
+//		mmc-hs200-1_8v;
+		max-frequency = <10000000>;
+//		max-frequency = <25500000>;
 		bus-width = <8>;
 		pinctrl-0 = <&sdmmc4_default>;
 	};
