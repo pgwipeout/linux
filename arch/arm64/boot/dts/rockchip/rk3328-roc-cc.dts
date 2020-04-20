@@ -93,18 +93,6 @@
 		vin-supply = <&vcc_sys>;
 	};
 
-	vcc_host_5v: vcc-host-5v-regulator {
-		compatible = "regulator-fixed";
-		enable-active-high;
-		gpio = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&usb30_host_drv>;
-		regulator-name = "vcc_host_5v";
-		regulator-always-on;
-		regulator-boot-on;
-		vin-supply = <&vcc_sys>;
-	};
-
 	vcc_sys: vcc-sys {
 		compatible = "regulator-fixed";
 		regulator-name = "vcc_sys";
@@ -226,12 +214,6 @@
 		opp-microvolt = <1325000>;
 		clock-latency-ns = <40000>;
 	};
-	opp-1512000000 {
-		status = "disabled";
-		opp-hz = /bits/ 64 <1512000000>;
-		opp-microvolt = <1350000>;
-		clock-latency-ns = <40000>;
-	};
 };
 
 &emmc {
@@ -256,14 +238,9 @@
 	phy-mode = "rgmii";
 	pinctrl-names = "default";
 	pinctrl-0 = <&rgmiim1_pins>;
-//	snps,aal;
 	snps,reset-gpio = <&gpio1 RK_PC2 GPIO_ACTIVE_LOW>;
 	snps,reset-active-low;
 	snps,reset-delays-us = <0 10000 50000>;
-//	snps,rxpbl = <0x4>;
-//	snps,txpbl = <0x4>;
-//	max-frame-size = "1498";
-	rockchip,bugged_tx_coe;
 	tx_delay = <0x24>;
 	rx_delay = <0x18>;
 	status = "okay";
@@ -428,12 +405,6 @@
 			rockchip,pins = <1 RK_PD2 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
-
-	usb3 {
-		usb30_host_drv: usb30-host-drv {
-			rockchip,pins = <0 RK_PA0 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-	};
 };
 
 &sdmmc {
@@ -479,7 +450,6 @@
 &usb20_otg {
 	status = "okay";
 	dr_mode = "host";
-	phy-supply = <&vcc_host_5v>;
 };
 
 &usb_host0_ehci {
@@ -496,7 +466,7 @@
 };
 
 &u3phy {
-    phy-supply = <&vcc_host_5v>;
+    phy-supply = <&vcc_host1_5v>;
 	status = "okay";
 };
 
