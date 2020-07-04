@@ -22,11 +22,9 @@
 	chosen {
 		stdout-path = "serial0:115200n8";
 		bootargs = "earlyprintk gpt gpt_sector=15073279 panic=10 console=ttyS0,115200n8 root=/dev/sda1 rootwait video=HDMI-A-1:1280x720@60 mitigations=off";
-//		bootargs = "earlyprintk gpt gpt_sector=15073279 panic=10 console=ttyS0,115200n8 root=/dev/sda1 rootwait video=HDMI-A-1:1280x720@60 mitigations=off";
 	};
 
 	memory@80000000 {
-//		reg = <0x80000000 0x3fe00000>;
 		reg = <0x80000000 0x40000000>;
 	};
 
@@ -115,7 +113,6 @@
 		compatible = "nvidia,tegra30-hsuart";
 
 		bluetooth {
-//			compatible = "brcm,bcm43438-bt";
                         compatible = "brcm,bcm4330-bt";
 
                         max-speed = <4000000>;
@@ -125,7 +122,6 @@
 
 			shutdown-gpios = <&gpio TEGRA_GPIO(U, 0) GPIO_ACTIVE_HIGH>;
 			device-wakeup-gpios = <&gpio TEGRA_GPIO(U, 1) GPIO_ACTIVE_HIGH>;
-//			host-wakeup-gpios = <&gpio TEGRA_GPIO(U, 6) GPIO_ACTIVE_LOW>;
                         interrupts = <TEGRA_GPIO(U, 6) IRQ_TYPE_LEVEL_HIGH>;
                         interrupt-names = "host-wakeup";
 		};
@@ -381,10 +377,6 @@
 
 	usb-phy@7d004000 {
 		vbus-supply = <&vdd_smsc>;
-/* 		nvidia,hssync-start-delay = <0>;
-		nvidia,xcvr-setup = <15>;
-		nvidia,xcvr-hsslew = <8>;
-		nvidia,hsdiscon-level = <1>; */
 		status = "okay";
 	};
 
@@ -395,9 +387,6 @@
 	usb-phy@7d008000 {
 		vbus-supply = <&usb3_vbus_reg>;
 		status = "okay";
-/* 		nvidia,xcvr-setup = <8>;
-		nvidia,xcvr-hsslew = <8>;
-		nvidia,hsdiscon-level = <1>; */
 	};
 
 	clk32k_in: clock@0 {
@@ -485,29 +474,6 @@
 		regulator-always-on;
 	};
 
-/* 	cam_1v8_reg: cam_1v8_reg {
-		compatible = "regulator-fixed";
-		regulator-name = "cam_1v8";
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		enable-active-high;
-		gpio = <&gpio TEGRA_GPIO(BB, 4) GPIO_ACTIVE_HIGH>;
-		vin-supply = <&vdd_1v8>;
-	}; */
-
-/* 	cp_5v_reg: cp_5v_reg {
-		compatible = "regulator-fixed";
-		regulator-name = "cp_5v";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		enable-active-high;
-		gpio = <&pmic 0 GPIO_ACTIVE_HIGH>;
-		vin-supply = <&vdd_5v_in>;
-		system-power-controller;
-		regulator-always-on;
-		regulator-boot-on;
-	}; */
-
 	emmc_3v3_reg: emmc_3v3_reg {
 		compatible = "regulator-fixed";
 		regulator-name = "emmc_3v3";
@@ -530,59 +496,6 @@
 		gpio = <&gpio TEGRA_GPIO(D, 4) GPIO_ACTIVE_HIGH>;
 		vin-supply = <&sys_3v3_reg>;
 	};
-
-/* 	modem_3v3_reg: modem_3v3_reg {
-		compatible = "regulator-fixed";
-		regulator-name = "modem_3v3";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		enable-active-high;
-		gpio = <&gpio TEGRA_GPIO(D, 6) GPIO_ACTIVE_HIGH>;
-	};
-
-	pex_hvdd_3v3_reg: pex_hvdd_3v3_reg {
-		compatible = "regulator-fixed";
-		regulator-name = "pex_hvdd_3v3";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		enable-active-high;
-		gpio = <&gpio TEGRA_GPIO(L, 7) GPIO_ACTIVE_HIGH>;
-		vin-supply = <&sys_3v3_reg>;
-	};
-
-	vdd_cam1_ldo_reg: vdd_cam1_ldo_reg {
-		compatible = "regulator-fixed";
-		regulator-name = "vdd_cam1_ldo";
-		regulator-min-microvolt = <2800000>;
-		regulator-max-microvolt = <2800000>;
-		enable-active-high;
-		gpio = <&gpio TEGRA_GPIO(R, 6) GPIO_ACTIVE_HIGH>;
-		vin-supply = <&sys_3v3_reg>;
-		regulator-always-on;
-		regulator-boot-on;
-	};
-
-	vdd_cam2_ldo_reg: vdd_cam2_ldo_reg {
-		compatible = "regulator-fixed";
-		regulator-name = "vdd_cam2_ldo";
-		regulator-min-microvolt = <2800000>;
-		regulator-max-microvolt = <2800000>;
-		enable-active-high;
-		gpio = <&gpio TEGRA_GPIO(R, 7) GPIO_ACTIVE_HIGH>;
-		vin-supply = <&sys_3v3_reg>;
-		regulator-always-on;
-		regulator-boot-on;
-	};
-
-	vdd_cam3_ldo_reg: vdd_cam3_ldo_reg {
-		compatible = "regulator-fixed";
-		regulator-name = "vdd_cam3_ldo";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		enable-active-high;
-		gpio = <&gpio TEGRA_GPIO(S, 0) GPIO_ACTIVE_HIGH>;
-		vin-supply = <&sys_3v3_reg>;
-	}; */
 
 	vdd_com_reg: vdd_com_reg {
 		compatible = "regulator-fixed";
@@ -691,28 +604,6 @@
 		vin-supply = <&vdd_5v_in>;
 	};
 
-/* 	vdd_bl_reg: vdd_bl_reg {
-		compatible = "regulator-fixed";
-		regulator-name = "vdd_bl";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		enable-active-high;
-		gpio = <&gpio TEGRA_GPIO(DD, 2) GPIO_ACTIVE_HIGH>;
-		regulator-always-on;
-		regulator-boot-on;
-	};
-
-	vdd_bl2_reg: vdd_bl2_reg {
-		compatible = "regulator-fixed";
-		regulator-name = "vdd_bl2";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		enable-active-high;
-		gpio = <&gpio TEGRA_GPIO(DD, 0) GPIO_ACTIVE_HIGH>;
-		regulator-always-on;
-		regulator-boot-on;
-	}; */
-
 	vdd_smsc: vdd_smsc {
 		compatible = "regulator-fixed";
 		regulator-name = "vdd_smsc";
@@ -733,14 +624,6 @@
 			wakeup-source;
 		};
 	};
-
-/*	reboot-mode {
-		mode-normal = <BOOT_NORMAL>;
-		mode-recovery = <BOOT_RECOVERY>;
-		mode-bootloader = <BOOT_FASTBOOT>;
-		mode-loader = <BOOT_BL_DOWNLOAD>;
-	};
-*/
 };
 &mc_timings {
 	nvidia,ram-code = <0>;
