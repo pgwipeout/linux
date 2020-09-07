@@ -734,10 +734,12 @@ static int tegra_xusb_usb2_port_parse_dt(struct tegra_xusb_usb2_port *usb2)
 			err = tegra_xusb_setup_usb_role_switch(port);
 			if (err < 0)
 				return err;
+		} else if (usb2->mode == USB_DR_MODE_PERIPHERAL) {
+			dev_err(&port->dev, "mandatory usb-role-switch not found for %s mode, disabling port\n", modes[usb2->mode]);
+			usb2->mode = USB_DR_MODE_UNKNOWN;
 		} else {
-			dev_err(&port->dev, "usb-role-switch not found for %s mode",
-				modes[usb2->mode]);
-			return -EINVAL;
+			dev_warn(&port->dev, "usb-role-switch not found for %s mode, forcing host\n", modes[usb2->mode]);
+			usb2->mode = USB_DR_MODE_HOST;
 		}
 	}
 
