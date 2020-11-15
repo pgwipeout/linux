@@ -208,11 +208,6 @@ static int rockchip_usb3phy_notify(struct notifier_block *nb, unsigned long acti
 		if (!(mutex_is_locked(&usb3phy->lock)))
 			schedule_work(&usb3phy->usb_phy_work);
 		return NOTIFY_OK;
-	case USB_DEVICE_REMOVE:
-		dev_dbg(usb3phy->dev, "notified of device remove\n");
-		if (!(mutex_is_locked(&usb3phy->lock)))
-			schedule_work(&usb3phy->usb_phy_work);
-		return NOTIFY_OK;
 	}
 	return NOTIFY_DONE;
 }
