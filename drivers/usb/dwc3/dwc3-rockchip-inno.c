@@ -36,8 +36,6 @@ struct dwc3_rk_inno {
 	struct mutex		lock;
 	int			num_clocks;
 	struct reset_control	*resets;
-	bool			need_reset;
-	bool			need_host_reset;
 };
 
 static int dwc3_rk_inno_host_reset_notifier(struct notifier_block *nb, unsigned long event, void *data)
@@ -104,15 +102,6 @@ static int dwc3_rk_inno_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, rk_inno);
 	rk_inno->dev = dev;
 
-	/*
-	 * Some controllers need to toggle the usb3-otg reset before trying to
-	 * initialize the PHY, otherwise the PHY times out.
-	 */
-	if (of_device_is_compatible(np, "rockchip,rk3328-dwc3")) {
-		rk_inno->need_reset = true;
-		rk_inno->need_host_reset = true;
-	}
-
 	rk_inno->resets = of_reset_control_array_get(np, false, true,
 						    true);
 	if (IS_ERR(rk_inno->resets)) {
@@ -138,34 +127,32 @@ static int dwc3_rk_inno_probe(struct platform_device *pdev)
 	if (ret)
 		goto err_clk_put;
 
-	if (rk_inno->need_host_reset) {
-		child = of_get_child_by_name(np, "dwc3");
-		if (!child) {
-			dev_err(dev, "failed to find dwc3 core node\n");
-			ret = -ENODEV;
-			goto err_plat_depopulate;
-		}
-
-		child_pdev = of_find_device_by_node(child);
-		if (!child_pdev) {
-			dev_err(dev, "failed to get dwc3 core device\n");
-			ret = -ENODEV;
-			goto err_plat_depopulate;
-		}
-
-		rk_inno->dwc = platform_get_drvdata(child_pdev);
-		if (!rk_inno->dwc || !rk_inno->dwc->xhci) {
-			ret = -EPROBE_DEFER;
-			goto err_plat_depopulate;
-		}
-
-		node = of_parse_phandle(child, "usb-phy", 0);
-		INIT_WORK(&rk_inno->reset_work, dwc3_rk_inno_host_reset_work);
-		rk_inno->reset_nb.notifier_call = dwc3_rk_inno_host_reset_notifier;
-		rk_inno->phy = devm_usb_get_phy_by_node(dev, node, &rk_inno->reset_nb);
-		of_node_put(node);
-		mutex_init(&rk_inno->lock);
+	child = of_get_child_by_name(np, "dwc3");
+	if (!child) {
+		dev_err(dev, "failed to find dwc3 core node\n");
+		ret = -ENODEV;
+		goto err_plat_depopulate;
 	}
+
+	child_pdev = of_find_device_by_node(child);
+	if (!child_pdev) {
+		dev_err(dev, "failed to get dwc3 core device\n");
+		ret = -ENODEV;
+		goto err_plat_depopulate;
+	}
+
+	rk_inno->dwc = platform_get_drvdata(child_pdev);
+	if (!rk_inno->dwc || !rk_inno->dwc->xhci) {
+		ret = -EPROBE_DEFER;
+		goto err_plat_depopulate;
+	}
+
+	node = of_parse_phandle(child, "usb-phy", 0);
+	INIT_WORK(&rk_inno->reset_work, dwc3_rk_inno_host_reset_work);
+	rk_inno->reset_nb.notifier_call = dwc3_rk_inno_host_reset_notifier;
+	rk_inno->phy = devm_usb_get_phy_by_node(dev, node, &rk_inno->reset_nb);
+	of_node_put(node);
+	mutex_init(&rk_inno->lock);
 
 	pm_runtime_set_active(dev);
 	pm_runtime_enable(dev);
@@ -241,8 +228,7 @@ static int __maybe_unused dwc3_rk_inno_suspend(struct device *dev)
 {
 	struct dwc3_rk_inno *rk_inno = dev_get_drvdata(dev);
 
-	if (rk_inno->need_reset)
-		reset_control_assert(rk_inno->resets);
+	reset_control_assert(rk_inno->resets);
 
 	return 0;
 }
@@ -251,8 +237,7 @@ static int __maybe_unused dwc3_rk_inno_resume(struct device *dev)
 {
 	struct dwc3_rk_inno *rk_inno = dev_get_drvdata(dev);
 
-	if (rk_inno->need_reset)
-		reset_control_deassert(rk_inno->resets);
+	reset_control_deassert(rk_inno->resets);
 
 	return 0;
 }
