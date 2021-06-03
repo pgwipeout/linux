@@ -210,7 +210,7 @@ static inline void wait_for_tx_idle(struct rockchip_spi *rs, bool slave_mode)
 	do {
 		if (slave_mode) {
 			if (!(readl_relaxed(rs->regs + ROCKCHIP_SPI_SR) & SR_SLAVE_TX_BUSY) &&
-			    !((readl_relaxed(rs->regs + ROCKCHIP_SPI_SR) & SR_BUSY))
+			    !((readl_relaxed(rs->regs + ROCKCHIP_SPI_SR) & SR_BUSY)))
 				return;
 		} else {
 			if (!(readl_relaxed(rs->regs + ROCKCHIP_SPI_SR) & SR_BUSY))
